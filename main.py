@@ -94,11 +94,25 @@ s5 = '''
     '''
 
 s6 = '''
-    void t()
+    int t()
     {
         int[] a = new int[5], b = new int[] {1,2+0, a}, c = new int[1] {1}, d;
-        a[9] = a[o+1];
+        a[9] = int(a[o+1]);
     }
     '''
 
-print(*build_tree(s6), sep=os.linesep)
+s7 = '''
+    int c, c1= 0;
+    void func(float par)
+    {
+        int a;
+    }
+    
+    int func2()
+    {
+        int s, d;
+    }
+    float s;
+    '''
+
+print(*build_tree(s7), sep=os.linesep)

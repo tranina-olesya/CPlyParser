@@ -66,9 +66,11 @@ def t_IDENT(t):
         t.type = reserved[t.value]
     return t
 
+
 def t_BRACKETS(t):
     r'\[\s*\]'
     return t
+
 
 def t_STRING(t):
     r'\".*\"'
@@ -101,9 +103,9 @@ def p_translation_unit(t):
             t[1].add_child(t[2])
         t[0] = t[1]
     elif len(t) > 1:
-        t[0] = StatementListNode(t[1])
+        t[0] = Program(t[1])
     else:
-        t[0] = StatementListNode()
+        t[0] = Program()
 
 
 def p_external_declaration(t):
@@ -399,7 +401,6 @@ def p_type_array(t):
     t[0] = Type(t[1], 1)
 
 
-
 def p_type(t):
     '''type : IDENT'''
     t[0] = Type(t[1])
@@ -498,8 +499,6 @@ def p_while(t):
     t[0] = WhileNode(t[3], t[5])
 
 
-
-
 def p_bool_value(t):
     '''bool_value : TRUE
                   | FALSE'''
@@ -524,4 +523,6 @@ parser = yacc.yacc()
 
 
 def build_tree(s):
-    return parser.parse(s).tree
+    p = parser.parse(s)
+    p.semantic_check()
+    return p.tree

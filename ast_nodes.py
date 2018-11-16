@@ -20,6 +20,10 @@ class AstNode(ABC):
     def __str__(self) -> str:
         pass
 
+    def semantic_check(self, context: 'Context' = None):
+        for each in self.childs:
+            each.semantic_check(context)
+
     @property
     def tree(self) -> [str, ...]:
         res = [str(self)]
@@ -39,21 +43,56 @@ class AstNode(ABC):
         return self.childs[index] if index < len(self.childs) else None
 
 
-class ExprNode(AstNode):
-    pass
+class ContextType(Enum):
+    Global = 'global'
+    Local = 'local'
 
 
-class Type(ExprNode):
-    def __init__(self, type: str, rang: int = 0):
-        self.base_types = ('int', 'string', 'float')
-        self.type = type
+class Context(object):
+    def __init__(self, context_type: ContextType):
+        self.vars_count = 0
+        self.context_type = context_type
+
+    def get_next_var_num(self):
+        num = self.vars_count
+        self.vars_count += 1
+        return num
+
+
+class BaseTypes(Enum):
+    Int = 'int'
+    Float = 'float'
+    String = 'str'
+    Void = 'void'
+
+
+class Type(AstNode):
+    def __init__(self, data_type: str, rang: int = 0,
+                 row: Optional[int] = None, line: Optional[int] = None, **props):
+        super().__init__(row=row, line=line, **props)
+        self.name = BaseTypes(data_type)
         self.rang = rang
 
-    def check(self):
-        return self.type in self.base_types
+    def is_castable_to(self, cast_type)->bool:
+        if cast_type.name == self.name:
+            return True
+        elif cast_type.name == BaseTypes.String:
+            return True
+        elif cast_type.name == BaseTypes.Float:
+            return self.name == BaseTypes.Int
+        elif cast_type.name == BaseTypes.Int:
+            return False
+        return False
 
     def __str__(self) -> str:
-        return self.type + ('[]' if self.rang else '')
+        return self.name.value + ('[]' if self.rang else '')
+
+
+class ExprNode(AstNode):
+    def __init__(self, data_type: Type = None,
+                 row: Optional[int] = None, line: Optional[int] = None, **props):
+        super().__init__(row=row, line=line, **props)
+        self.data_type = data_type
 
 
 class LiteralNode(ExprNode):
@@ -64,6 +103,7 @@ class LiteralNode(ExprNode):
         if literal in ('true', 'false'):
             literal = literal.title()
         self.value = eval(literal)
+        self.data_type = Type(type(self.value).__name__)
 
     def __str__(self) -> str:
         return '{0} ({1})'.format(self.literal, type(self.value).__name__)
@@ -74,9 +114,31 @@ class IdentNode(ExprNode):
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
         self.name = str(name)
+        self.index = None
+        self.data_type: Type = None
+        self.var_type: Context = None
 
     def __str__(self) -> str:
-        return str(self.name)
+        if self.index is not None and self.data_type and self.var_type:
+            return str(self.name + ' (' + 'dtype=' + self.data_type.name.value +
+                        ', vtype=' + self.var_type.context_type.value + ', index=' + str(self.index) + ')')
+        else:
+            return str(self.name)
+
+
+class CastNode(ExprNode):
+    def __init__(self, var: ExprNode, data_type: Type,
+                 row: Optional[int] = None, line: Optional[int] = None, **props):
+        super().__init__(row=row, line=line, **props)
+        self.var = var
+        self.data_type = data_type
+
+    @property
+    def childs(self) -> Tuple[ExprNode, Type]:
+        return self.var, self.data_type
+
+    def __str__(self) -> str:
+        return 'cast'
 
 
 class BinOp(Enum):
@@ -104,6 +166,21 @@ class BinOpNode(ExprNode):
         self.op = op
         self.arg1 = arg1
         self.arg2 = arg2
+
+    def semantic_check(self, context: Context = None):
+        for each in self.childs:
+            each.semantic_check(context)
+
+        if self.arg1.data_type == self.arg2.data_type:
+            self.data_type = self.arg1.data_type
+        elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
+            self.data_type = self.arg2.data_type
+            self.arg1 = CastNode(self.arg1, self.data_type)
+        elif self.arg2.data_type.is_castable_to(self.arg1.data_type):
+            self.data_type = self.arg1.data_type
+            self.arg2 = CastNode(self.arg2, self.data_type)
+        else:
+            raise Exception("Cannot be casted")
 
     @property
     def childs(self) -> Tuple[ExprNode, ExprNode]:
@@ -148,11 +225,30 @@ class VarsDeclNode(StmtNode):
         self.vars_list = vars_list
 
     @property
-    def childs(self) -> Tuple[ExprNode, ...]:
+    def childs(self) -> Tuple[Type, ...]:
         return self.vars_type, (*self.vars_list)
 
     def __str__(self) -> str:
         return 'var'
+
+    def semantic_check(self, context: Context = None):
+        for el in self.vars_list:
+            if type(el) is IdentNode:
+                el: IdentNode
+                el.index = context.get_next_var_num()
+                el.data_type = self.vars_type
+                el.var_type = context
+                pass
+            elif type(el) is AssignNode:
+                el: AssignNode
+                el.var.index = context.get_next_var_num()
+                el.var.data_type = self.vars_type
+                el.var.var_type = context
+            else:
+                print('??')
+
+        for each in self.childs:
+            each.semantic_check(context)
 
 
 class CallNode(StmtNode):
@@ -171,8 +267,8 @@ class CallNode(StmtNode):
 
 
 class Param(object):
-    def __init__(self, type: Type, name: IdentNode):
-        self.type = type
+    def __init__(self, data_type: Type, name: IdentNode):
+        self.data_type = data_type
         self.name = name
 
 
@@ -196,10 +292,15 @@ class FunctionNode(StmtNode):
     def __str__(self) -> str:
         params = ''
         if len(self.params):
-            params += self.params[0].type.value + ' ' + self.params[0].name.name
+            params += self.params[0].data_type.name.value + ' ' + self.params[0].name.name
             for item in self.params[1:]:
-                params += ', ' + item.type.value + ' ' + item.name.name
+                params += ', ' + item.data_type.value + ' ' + item.name.name
         return str(self.var) + ' ' + str(self.name) + '(' + params + ')'
+
+    def semantic_check(self, context: Context = None):
+        context = Context(ContextType.Local)
+        for each in self.childs:
+            each.semantic_check(context)
 
 
 class AssignNode(StmtNode):
@@ -212,6 +313,11 @@ class AssignNode(StmtNode):
     @property
     def childs(self) -> Tuple[IdentNode, ExprNode]:
         return self.var, self.val
+
+    def semantic_check(self, context: ContextType = None):
+        # if self.var.type != self.val.type:
+        for each in self.childs:
+            each.semantic_check(context)
 
     def __str__(self) -> str:
         return '='
@@ -233,10 +339,10 @@ class ElementNode(ExprNode):
 
 
 class ArrayIdentNode(ExprNode):
-    def __init__(self, type: Type, num: ExprNode = None, *elements: Tuple[ExprNode],
+    def __init__(self, data_type: Type, num: ExprNode = None, *elements: Tuple[ExprNode],
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
-        self.type = type
+        self.data_type = data_type
         self.num = num if num else _empty
         self.elements = elements if elements else (_empty,)
 
@@ -245,7 +351,7 @@ class ArrayIdentNode(ExprNode):
         return (*self.elements,)
 
     def __str__(self) -> str:
-        return self.type.type + '[' + str(self.num) + ']'
+        return self.data_type.name.value + '[' + str(self.num) + ']'
 
 
 class ReturnNode(StmtNode):
@@ -287,7 +393,6 @@ class BreakNode(StmtNode):
 
     def __str__(self) -> str:
         return 'break'
-
 
 
 class IfNode(StmtNode):
@@ -360,7 +465,6 @@ class StatementListNode(StmtNode):
         super().__init__(row=row, line=line, **props)
         self.exprs = exprs
 
-
     def add_child(self, *ch):
         self.exprs += ch
 
@@ -368,8 +472,25 @@ class StatementListNode(StmtNode):
     def childs(self) -> Tuple[StmtNode, ...]:
         return self.exprs
 
+    def semantic_check(self, context: Context = None):
+        context = Context(ContextType.Local)
+        for each in self.childs:
+            each.semantic_check(context)
+
     def __str__(self) -> str:
         return '...'
+
+
+class Program(StatementListNode):
+    def __init__(self, *exprs: StmtNode,
+                 row: Optional[int] = None, line: Optional[int] = None, **props):
+        super().__init__(exprs=exprs, row=row, line=line, **props)
+        self.exprs = exprs
+
+    def semantic_check(self, context: Context = None):
+        context = Context(ContextType.Global)
+        for each in self.childs:
+            each.semantic_check(context)
 
 
 _empty = StatementListNode()
