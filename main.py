@@ -102,17 +102,19 @@ s6 = '''
     '''
 
 s7 = '''
-    int c, c1= 0;
-    void func(float par)
-    {
-        int a;
+    int c = 5;
+    float func1(float a) {
+      float r = 0.7 * a;
+      r = r + c;
+      return r;
     }
-    
-    int func2()
+    int main()
     {
-        int s, d;
+        int x = input();
+        float r = func1(7 + 0.2 + x);
     }
-    float s;
     '''
 
-print(*build_tree(s7), sep=os.linesep)
+#print(*build_tree(s7), sep=os.linesep)
+
+print_tree(s7)

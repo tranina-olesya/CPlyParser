@@ -1,6 +1,7 @@
 import ply.lex as lex
 from ast_nodes import *
 import ply.yacc as yacc
+import os
 
 tokens = [
     'NUMBER', 'IDENT', 'STRING',
@@ -522,7 +523,8 @@ def p_error(t):
 parser = yacc.yacc()
 
 
-def build_tree(s):
+def print_tree(s):
     p = parser.parse(s)
     p.semantic_check()
-    return p.tree
+    if not logger.error.counter:
+        print(*p.tree, sep=os.linesep)
