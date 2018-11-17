@@ -7,7 +7,7 @@ tokens = [
     'NUMBER', 'IDENT', 'STRING',
     'ADD', 'SUB', 'MUL', 'DIV', 'MOD',
     'INC_OP', 'DEC_OP',
-    'ASSIGN',
+    'ASSIGN', 'ADD_ASSIGN', 'SUB_ASSIGN', 'MUL_ASSIGN', 'DIV_ASSIGN', 'MOD_ASSIGN',
     'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET', 'BRACKETS',
     'SEMICOLON', 'COMMA',
     'GT', 'LT', 'GE', 'LE',
@@ -37,6 +37,11 @@ t_MUL = r'\*'
 t_DIV = r'/'
 t_MOD = r'%'
 t_ASSIGN = r'='
+t_ADD_ASSIGN = r'\+='
+t_SUB_ASSIGN= r'-='
+t_MUL_ASSIGN = r'\*='
+t_DIV_ASSIGN = r'/='
+t_MOD_ASSIGN = r'%='
 t_INC_OP = r'\+\+'
 t_DEC_OP = r'--'
 t_LPAREN = r'\('
@@ -58,6 +63,7 @@ t_OR = r'\|\|'
 t_AND = r'&&'
 t_NOT = r'!'
 t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
+
 t_ignore = ' \r\t'
 
 
@@ -287,7 +293,8 @@ def p_postfix_expression(t):
                           | lvalue INC_OP
                           | lvalue DEC_OP'''
     if len(t) > 2:
-        t[0] = UnOpNode(UnOp(t[2]), t[1], row=t.lexer.lineno)
+        # t[0] = UnOpNode(UnOp(t[2]), t[1], row=t.lexer.lineno)
+        t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], LiteralNode(str(1)), row=t.lexer.lineno), row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -315,18 +322,34 @@ def p_if(t):
 
 
 def p_assignment(t):
-    '''assignment : lvalue ASSIGN rvalue'''
-    t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
+    '''assignment : lvalue assignment_operation rvalue'''
+    if t[2][0] == '=':
+        t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
+    else:
+        t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], t[3], row=t.lexer.lineno), row=t.lexer.lineno)
 
 
 def p_rvalue(t):
     '''rvalue : logical_expression
               | array_value
-              | lvalue ASSIGN rvalue'''
+              | lvalue assignment_operation rvalue'''
     if len(t) > 2:
-        t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
+        if t[2][0] == '=':
+            t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
+        else:
+            t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], t[3], row=t.lexer.lineno), row=t.lexer.lineno)
     else:
         t[0] = t[1]
+
+
+def p_assignment_operation(t):
+    '''assignment_operation : ASSIGN
+                            | ADD_ASSIGN
+                            | SUB_ASSIGN
+                            | MUL_ASSIGN
+                            | DIV_ASSIGN
+                            | MOD_ASSIGN'''
+    t[0] = t[1]
 
 
 def p_simple_rvalue(t):

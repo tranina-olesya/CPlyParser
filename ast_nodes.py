@@ -316,20 +316,23 @@ class CallNode(StmtNode):
             each.semantic_check(context)
 
         v: FunctionNode = context.find_function(self.func.name)
-        self.data_type = v.data_type
-        if len(self.params) < len(v.params):
-            logger.error(str(self.row) + ': ' + str(self.func.name) + ': not enough arguments in the function call')
-        elif len(self.params) > len(v.params):
-            logger.error(str(self.row) + ': ' + str(self.func.name) + ': too many arguments in the function call')
+        if v:
+            self.data_type = v.data_type
+            if len(self.params) < len(v.params):
+                logger.error(str(self.row) + ': ' + str(self.func.name) + ': not enough arguments in the function call')
+            elif len(self.params) > len(v.params):
+                logger.error(str(self.row) + ': ' + str(self.func.name) + ': too many arguments in the function call')
+            else:
+                for i, p in enumerate(self.params):
+                    if v.params[i].data_type.name != p.data_type.name:
+                        if p.data_type.is_castable_to(v.params[i].data_type):
+                            self.params[i] = CastNode(self.params[i], v.params[i].data_type)
+                        else:
+                            logger.error(str(self.row) + ': ' + str(self.func.name) + ': argument (' + str(i + 1) +
+                                         ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
+                                         str(v.params[i].data_type) + '\'')
         else:
-            for i, p in enumerate(self.params):
-                if v.params[i].data_type.name != p.data_type.name:
-                    if p.data_type.is_castable_to(v.params[i].data_type):
-                        self.params[i] = CastNode(self.params[i], v.params[i].data_type)
-                    else:
-                        logger.error(str(self.row) + ': ' + str(self.func.name) + ': ' + 'argument (' + str(i + 1) +
-                                     ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
-                                     str(v.params[i].data_type) + '\'')
+            logger.error(str(self.row) + ': ' + str(self.func.name) + ': unknown identifier')
 
 
 class FunctionNode(StmtNode):
@@ -361,7 +364,7 @@ class FunctionNode(StmtNode):
                     s += ', '
                 s += '(dtype=' + str(e.data_type) + ', vtype=' + str(e.var_type.value) + ', index=' + str(e.index) + ')'
         if s:
-            return str(self.data_type) + ' ' + self.name + '(' + params + ') (' + s + '}'
+            return str(self.data_type) + ' ' + self.name + '(' + params + ') (' + s + ')'
         else:
             return str(self.data_type) + ' ' + self.name + '(' + params + ')'
 
@@ -393,7 +396,7 @@ class AssignNode(StmtNode):
         for each in self.childs:
             each.semantic_check(context)
 
-        if self.var.data_type.name and self.val.data_type:
+        if self.var.data_type and self.var.data_type.name and self.val.data_type:
             self.data_type = self.var.data_type
             if self.var.data_type.name != self.val.data_type.name:
                 if self.val.data_type.is_castable_to(self.var.data_type):

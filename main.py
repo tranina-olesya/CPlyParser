@@ -3,7 +3,6 @@ import os
 
 
 s1 = '''
-        bool eee, eee2 = false;
         int plus(int a, int b)
         {
             int res = a + b;
@@ -14,37 +13,38 @@ s1 = '''
             return a - b;
         }
         
-        void main(float res)
+        int main(float res)
         {
-            c = input();
+            float c = 0;
             for(int i = 0; i < 5; i++)
             {
-                c = minus(plus(c, i), i);
-                output(c);
+                c = minus(plus(1, i), i);
                 if ( c > 90)
                     return;
             }
         }
         ;
-        void pass() { }
+        int pass() { }
     '''
 
 s2 = '''
-        void test1() 
+        int a, b;
+        int test1() 
         {
-            int g, g2 = g, g = 90;
+            int g, g2 = g;
     
-            a = input(); b = input();  /* comment 1
+            /* comment 1
             c = input();
             */
-            for (int i = 0, j = 8; ((i <= 5)) && g; i = i + 1, print(5))
+            for (int i = 0, j = 8; ((i <= 5)) && g; i = i + 1)
                 for(; a < b;)
                     if (a > 7 + b) {
-                        c = a + b * (2 - 1) + 0;  // comment 2
-                        b = "98\tура";
+                        int c = a + b * (2 - 1) + 0;  // comment 2
+                        str ab = "98\tура";
                     }
-                    else if (f)            
-                        output(c + 1, 89.89);
+                    else if (a > 4)   
+                        ab = ab + "a";         
+                        //output(c + 1, 89.89);
             for(;;);
         }
     '''
@@ -107,16 +107,17 @@ s7 = '''
     float f1(float a, float st) {
         int c = 1;
         
-        float r = 7 * 2;
-        r = r + c;
+        int r = 7 * 2;
+        r = c *= 0;
         return r;
     }
-    
     int main()
     {
         int x;
+        x += 2 + 2;
+        /*
         x = input();
-        float r = f1(7 + 0.2, 70);
+        float r = f1(7 + 0.2, 70); */
     }
     '''
 

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4e146efa-8f26-48d6-9c1e-9d55795505c5" name="Default" comment="ident">
+    <list default="true" id="4e146efa-8f26-48d6-9c1e-9d55795505c5" name="Default" comment="type, params, etc">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ast_nodes.py" beforeDir="false" afterPath="$PROJECT_DIR$/ast_nodes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cTreeParser.py" beforeDir="false" afterPath="$PROJECT_DIR$/cTreeParser.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parser.out" beforeDir="false" afterPath="$PROJECT_DIR$/parser.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parsetab.py" beforeDir="false" afterPath="$PROJECT_DIR$/parsetab.py" afterDir="false" />
     </list>
     <ignored path="s.py" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -42,14 +44,14 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="10" />
-          <entry key="py" value="6833" />
-          <entry key="txt" value="43" />
+          <entry key="py" value="7274" />
+          <entry key="txt" value="66" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="53" />
-          <entry key="Python" value="6833" />
+          <entry key="PLAIN_TEXT" value="76" />
+          <entry key="Python" value="7274" />
         </counts>
       </usages-collector>
     </session>
@@ -84,24 +86,25 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cTreeParser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="174">
-              <caret line="527" selection-start-line="527" selection-end-line="527" />
+            <state relative-caret-position="153">
+              <caret line="9" column="28" selection-start-line="9" selection-start-column="28" selection-end-line="9" selection-end-column="28" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
-                <marker date="1542474582613" expanded="true" signature="13151:13154" ph="..." />
+                <marker date="1542488752292" expanded="true" signature="8468:8568" ph="..." />
+                <marker date="1542488752292" expanded="true" signature="13783:13786" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="140">
-              <caret line="112" column="5" selection-start-line="112" selection-start-column="5" selection-end-line="112" selection-end-column="5" />
+            <state relative-caret-position="119">
+              <caret line="110" column="19" selection-start-line="110" selection-start-column="19" selection-end-line="110" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -109,8 +112,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ast_nodes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="285">
-              <caret line="286" column="60" selection-start-line="286" selection-start-column="60" selection-end-line="286" selection-end-column="60" />
+            <state relative-caret-position="115">
+              <caret line="153" selection-start-line="153" selection-end-line="153" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
                 <element signature="e#4275#4511#0" />
@@ -118,9 +121,9 @@
                 <element signature="e#10135#10681#0" />
                 <element signature="e#10716#11117#0" />
                 <element signature="e#11461#11731#0" />
-                <marker date="1542485549068" expanded="true" signature="584:664" ph="..." />
-                <marker date="1542485549068" expanded="true" signature="4591:5045" ph="..." />
-                <marker date="1542485549068" expanded="true" signature="19226:19629" ph="..." />
+                <marker date="1542486501272" expanded="true" signature="584:664" ph="..." />
+                <marker date="1542486501272" expanded="true" signature="4591:5045" ph="..." />
+                <marker date="1542486501272" expanded="true" signature="19422:19825" ph="..." />
               </folding>
             </state>
           </provider>
@@ -129,8 +132,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/logger.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="85">
-              <caret line="5" selection-start-line="5" selection-end-line="5" />
+            <state relative-caret-position="153">
+              <caret line="9" selection-start-line="9" selection-end-line="9" />
             </state>
           </provider>
         </entry>
@@ -146,9 +149,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>contex</find>
-      <find>FunctionNode</find>
-      <find>assig</find>
       <find>bino</find>
       <find>functionn</find>
       <find>id</find>
@@ -171,11 +171,14 @@
       <find>assi</find>
       <find>unkn</find>
       <find>liter</find>
-      <find>syntax</find>
       <find>arsd</find>
       <find>logg</find>
-      <find>call</find>
+      <find>syntax</find>
+      <find>INC_OP</find>
+      <find>BinOp</find>
       <find>ident</find>
+      <find>call</find>
+      <find>ASSI</find>
     </findStrings>
     <replaceStrings>
       <replace>ADD</replace>
@@ -216,9 +219,9 @@
         <option value="$PROJECT_DIR$/parserr.py" />
         <option value="$PROJECT_DIR$/logger.py" />
         <option value="$PROJECT_DIR$/s.py" />
-        <option value="$PROJECT_DIR$/cTreeParser.py" />
         <option value="$PROJECT_DIR$/ast_nodes.py" />
         <option value="$PROJECT_DIR$/main.py" />
+        <option value="$PROJECT_DIR$/cTreeParser.py" />
       </list>
     </option>
   </component>
@@ -347,7 +350,14 @@
       <option name="project" value="LOCAL" />
       <updated>1542463410048</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="type, params, etc">
+      <created>1542485729930</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1542485729931</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TodoView">
@@ -433,7 +443,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="semantic_check for VarsDeclNode" />
     <MESSAGE value="ident" />
-    <option name="LAST_COMMIT_MESSAGE" value="ident" />
+    <MESSAGE value="type, params, etc" />
+    <option name="LAST_COMMIT_MESSAGE" value="type, params, etc" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -474,19 +485,14 @@
           <option name="timeStamp" value="158" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/logger.py</url>
-          <line>14</line>
-          <option name="timeStamp" value="159" />
+          <url>file://$PROJECT_DIR$/ast_nodes.py</url>
+          <line>319</line>
+          <option name="timeStamp" value="162" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/logger.py</url>
-          <line>5</line>
-          <option name="timeStamp" value="160" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/logger.py</url>
-          <line>9</line>
-          <option name="timeStamp" value="161" />
+          <url>file://$PROJECT_DIR$/cTreeParser.py</url>
+          <line>322</line>
+          <option name="timeStamp" value="164" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
@@ -565,6 +571,38 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/logger.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="9" selection-start-line="9" selection-end-line="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ast_nodes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="115">
+          <caret line="153" selection-start-line="153" selection-end-line="153" />
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
+            <element signature="e#4275#4511#0" />
+            <element signature="e#9709#10096#0" />
+            <element signature="e#10135#10681#0" />
+            <element signature="e#10716#11117#0" />
+            <element signature="e#11461#11731#0" />
+            <marker date="1542486501272" expanded="true" signature="584:664" ph="..." />
+            <marker date="1542486501272" expanded="true" signature="4591:5045" ph="..." />
+            <marker date="1542486501272" expanded="true" signature="19422:19825" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="110" column="19" selection-start-line="110" selection-start-column="19" selection-end-line="110" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/s.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="153">
@@ -574,44 +612,13 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cTreeParser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="174">
-          <caret line="527" selection-start-line="527" selection-end-line="527" />
+        <state relative-caret-position="153">
+          <caret line="9" column="28" selection-start-line="9" selection-start-column="28" selection-end-line="9" selection-end-column="28" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
-            <marker date="1542474582613" expanded="true" signature="13151:13154" ph="..." />
+            <marker date="1542488752292" expanded="true" signature="8468:8568" ph="..." />
+            <marker date="1542488752292" expanded="true" signature="13783:13786" ph="..." />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/logger.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="85">
-          <caret line="5" selection-start-line="5" selection-end-line="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ast_nodes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="286" column="60" selection-start-line="286" selection-start-column="60" selection-end-line="286" selection-end-column="60" />
-          <folding>
-            <element signature="e#0#35#0" expanded="true" />
-            <element signature="e#4275#4511#0" />
-            <element signature="e#9709#10096#0" />
-            <element signature="e#10135#10681#0" />
-            <element signature="e#10716#11117#0" />
-            <element signature="e#11461#11731#0" />
-            <marker date="1542485549068" expanded="true" signature="584:664" ph="..." />
-            <marker date="1542485549068" expanded="true" signature="4591:5045" ph="..." />
-            <marker date="1542485549068" expanded="true" signature="19226:19629" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
-          <caret line="112" column="5" selection-start-line="112" selection-start-column="5" selection-end-line="112" selection-end-column="5" />
         </state>
       </provider>
     </entry>
