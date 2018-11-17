@@ -52,12 +52,16 @@ class VarType(Enum):
 class Context(object):
     def __init__(self, parent: 'Context' = None):
         self.vars = []
+        self.functions = [FunctionNode(Type('int'), 'input')]
         self.parent = parent
 
     def add_var(self, var: 'IdentNode'):
         self.vars.append(var)
 
-    def get_var(self, var_name):
+    def add_function(self, func: 'FunctionNode'):
+        self.functions.append(func)
+
+    def find_var(self, var_name):
         loc_var = None
         loc_context = self
         while not loc_var and loc_context:
@@ -66,8 +70,14 @@ class Context(object):
                 loc_var = loc_var[0]
             loc_context = loc_context.parent
 
-        if loc_var:
-            return loc_var
+        return loc_var
+
+    def find_function(self, func_name):
+        loc_context = self
+        while loc_context.parent:
+            loc_context = loc_context.parent
+        func = list(filter(lambda x: x.name == func_name, loc_context.functions))
+        return func[0] if func else None
 
 
 class BaseTypes(Enum):
@@ -92,7 +102,7 @@ class Type(AstNode):
             self.name = BaseTypes(data_type)
         else:
             self.name = None
-            logger.error(data_type + ': неизвестный тип')
+            logger.error(str(self.row) + ': ' + data_type + ': unknown identifier')
         self.rang = rang
 
     def is_castable_to(self, cast_type)->bool:
@@ -125,7 +135,7 @@ class LiteralNode(ExprNode):
         if literal in ('true', 'false'):
             literal = literal.title()
         self.value = eval(literal)
-        self.data_type = Type(type(self.value).__name__)
+        self.data_type = Type(type(self.value).__name__, row=self.row)
 
     def __str__(self) -> str:
         return '{0} ({1})'.format(self.literal, type(self.value).__name__)
@@ -141,18 +151,25 @@ class IdentNode(ExprNode):
         self.var_type: VarType = None
 
     def semantic_check(self, context: Context = None):
-        v: IdentNode = context.get_var(self.name)
-        if not v:
-            logger.error(self.name + ': необъявленный идентификатор')
-        elif v != self:
-            self.index = v.index
-            self.var_type = v.var_type
-            self.data_type = v.data_type
+        v: IdentNode = context.find_var(self.name)
+        if v:
+            if v != self:
+                self.index = v.index
+                self.var_type = v.var_type
+                self.data_type = v.data_type
+        else:
+            v = context.find_function(self.name)
+            if v:
+                self.data_type = v.data_type
+            else:
+                logger.error(str(self.row) + ': ' + self.name + ': unknown identifier')
 
     def __str__(self) -> str:
         if self.index is not None and self.data_type and self.var_type:
-            return str(self.name + ' (' + 'dtype=' + self.data_type.name.value +
+            return str(self.name + ' (dtype=' + self.data_type.name.value +
                         ', vtype=' + self.var_type.value + ', index=' + str(self.index) + ')')
+        elif self.data_type:
+            return str(self.name + ' (dtype=' + str(self.data_type) + ')')
         else:
             return str(self.name)
 
@@ -264,50 +281,68 @@ class VarsDeclNode(StmtNode):
 
     def semantic_check(self, context: Context = None):
         for el in self.vars_list:
-            if type(el) is IdentNode:
+            if type(el) is AssignNode:
+                el: AssignNode = el.var
                 el: IdentNode
+            if context.find_var(el.name) not in context.vars:
                 context.add_var(el)
                 el.index = len(context.vars) - 1
                 el.data_type = self.vars_type
                 el.var_type = VarType.Local if context.parent else VarType.Global
-            elif type(el) is AssignNode:
-                el: AssignNode
-                context.add_var(el.var)
-                el.var.index = len(context.vars) - 1
-                el.var.data_type = self.vars_type
-                el.var.var_type = VarType.Local if context.parent else VarType.Global
-
+            else:
+                logger.error(str(self.row) + ': ' + str(el.name) + ': identifier was already declared')
         for each in self.childs:
             each.semantic_check(context)
 
 
 class CallNode(StmtNode):
-    def __init__(self, func: IdentNode, *params: Tuple[ExprNode],
+    def __init__(self, func: IdentNode, *params: [ExprNode],
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
         self.func = func
-        self.params = params
+        self.params = list(params)
 
     @property
     def childs(self) -> Tuple[IdentNode, ...]:
         return self.func, (*self.params)
 
     def __str__(self) -> str:
+        if self.data_type:
+            return 'call (dtype=' + str(self.data_type) + ')'
         return 'call'
+
+    def semantic_check(self, context: Context = None):
+        for each in self.childs:
+            each.semantic_check(context)
+
+        v: FunctionNode = context.find_function(self.func.name)
+        self.data_type = v.data_type
+        if len(self.params) < len(v.params):
+            logger.error(str(self.row) + ': ' + str(self.func.name) + ': not enough arguments in the function call')
+        elif len(self.params) > len(v.params):
+            logger.error(str(self.row) + ': ' + str(self.func.name) + ': too many arguments in the function call')
+        else:
+            for i, p in enumerate(self.params):
+                if v.params[i].data_type.name != p.data_type.name:
+                    if p.data_type.is_castable_to(v.params[i].data_type):
+                        self.params[i] = CastNode(self.params[i], v.params[i].data_type)
+                    else:
+                        logger.error(str(self.row) + ': ' + str(self.func.name) + ': ' + 'argument (' + str(i + 1) +
+                                     ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
+                                     str(v.params[i].data_type) + '\'')
 
 
 class FunctionNode(StmtNode):
-    def __init__(self, var: Type, name: IdentNode, params: Tuple = None, *body: Tuple[StmtNode],
+    def __init__(self, data_type : Type, name: str, params: Tuple = None, *body: Tuple[StmtNode],
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
-        self.var = var
+        self.data_type = data_type
         self.name = name
         self.params = self.check_params(params) if params else tuple()
         self.body = body if body else (_empty,)
 
-    @staticmethod
-    def check_params(params):
-        return tuple(IdentNode(param.childs[1], Type(str(param.vars_type))) for param in params)
+    def check_params(self, params):
+        return tuple(IdentNode(param.childs[1], Type(str(param.vars_type), row=self.row)) for param in params)
 
     @property
     def childs(self) -> Tuple[AstNode]:
@@ -321,21 +356,24 @@ class FunctionNode(StmtNode):
                 params += ', ' + str(item.data_type) + ' ' + item.name
         s = ''
         for e in self.params:
-            if e.data_type:
+            if e.data_type and e.var_type and e.index is not None:
                 if s:
                     s += ', '
                 s += '(dtype=' + str(e.data_type) + ', vtype=' + str(e.var_type.value) + ', index=' + str(e.index) + ')'
         if s:
-            return str(self.var) + ' ' + str(self.name) + '(' + params + ') (' + s + '}'
+            return str(self.data_type) + ' ' + self.name + '(' + params + ') (' + s + '}'
         else:
-            return str(self.var) + ' ' + str(self.name) + '(' + params + ')'
+            return str(self.data_type) + ' ' + self.name + '(' + params + ')'
 
     def semantic_check(self, context: Context = None):
+        context.add_function(self)
         context = Context(context)
         for el in self.params:
             context.add_var(el)
             el.index = len(context.vars) - 1
             el.var_type = VarType.Param
+
+        context = Context(context)
         for each in self.childs:
             each.semantic_check(context)
 
@@ -352,11 +390,20 @@ class AssignNode(StmtNode):
         return self.var, self.val
 
     def semantic_check(self, context: Context = None):
-        # if self.var.type != self.val.type:
         for each in self.childs:
             each.semantic_check(context)
 
+        if self.var.data_type.name and self.val.data_type:
+            self.data_type = self.var.data_type
+            if self.var.data_type.name != self.val.data_type.name:
+                if self.val.data_type.is_castable_to(self.var.data_type):
+                    self.val = CastNode(self.val, self.data_type)
+                else:
+                    logger.error(str(self.var.row) + ': ' + str(self.var.name) + ': value does not match \"' + str(self.data_type) + '\" type')
+
     def __str__(self) -> str:
+        if self.data_type:
+            return '= (dtype=' + str(self.data_type) + ')'
         return '='
 
 
@@ -546,7 +593,8 @@ class Program(StatementListNode):
     def semantic_check(self, context: Context = None):
         context = Context()
         for each in self.childs:
-            each.semantic_check(context)
+            if each:
+                each.semantic_check(context)
 
 
 _empty = StatementListNode()

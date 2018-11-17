@@ -80,7 +80,7 @@ def t_STRING(t):
 
 def t_ccode_comment(t):
     r'(/\*(.|\n)*?\*/)|(//.*)'
-    pass
+    t.lexer.lineno += t.value.count("\n")
 
 
 def t_newline(t):
@@ -89,7 +89,7 @@ def t_newline(t):
 
 
 def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    logger.error(str(t.lineno) + ": illegal character '%s'" % t.value[0])
 
 
 lexer = lex.lex()
@@ -124,7 +124,7 @@ def p_statement_list(t):
             t[1].add_child(t[2])
         t[0] = t[1]
     else:
-        t[0] = StatementListNode()
+        t[0] = StatementListNode(row=t.lexer.lineno)
 
 
 def p_statement(t):
@@ -163,19 +163,19 @@ def p_return(t):
     '''return : RETURN
               | RETURN logical_expression'''
     if len(t) > 2:
-        t[0] = ReturnNode(t[2])
+        t[0] = ReturnNode(t[2], row=t.lexer.lineno)
     else:
-        t[0] = ReturnNode()
+        t[0] = ReturnNode(row=t.lexer.lineno)
 
 
 def p_continue(t):
     '''continue : CONTINUE'''
-    t[0] = ContinueNode()
+    t[0] = ContinueNode(row=t.lexer.lineno)
 
 
 def p_break(t):
     '''break : BREAK'''
-    t[0] = BreakNode()
+    t[0] = BreakNode(row=t.lexer.lineno)
 
 
 def p_iteration_statement(t):
@@ -200,9 +200,9 @@ def p_expression_list(t):
         t[1].add_child(t[3])
         t[0] = t[1]
     elif len(t) > 1:
-        t[0] = StatementListNode(t[1])
+        t[0] = StatementListNode(t[1], row=t.lexer.lineno)
     else:
-        t[0] = StatementListNode()
+        t[0] = StatementListNode(row=t.lexer.lineno)
 
 
 def p_logical_expression(t):
@@ -214,7 +214,7 @@ def p_logical_or_expression(t):
     '''logical_or_expression : logical_and_expression
                              | logical_or_expression OR logical_and_expression'''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -223,7 +223,7 @@ def p_logical_and_expression(t):
     '''logical_and_expression : equality_expression
                               | logical_and_expression AND equality_expression'''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -233,7 +233,7 @@ def p_equality_expression(t):
                            | equality_expression EQUALS relational_expression
                            | equality_expression NOTEQUALS relational_expression '''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -245,7 +245,7 @@ def p_relational_expression(t):
                              | relational_expression GE additive_expression
                              | relational_expression LE additive_expression'''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -255,7 +255,7 @@ def p_additive_expression(t):
                            | additive_expression ADD multiplicative_expression
                            | additive_expression SUB multiplicative_expression'''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -266,7 +266,7 @@ def p_multiplicative_expression(t):
                                  | multiplicative_expression DIV unary_expression
                                  | multiplicative_expression MOD unary_expression'''
     if len(t) > 2:
-        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3])
+        t[0] = BinOpNode(BinOp(t[2]), t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -277,7 +277,7 @@ def p_unary_expression(t):
                         | SUB group
                         | ADD group'''
     if len(t) > 2:
-        t[0] = UnOpNode(UnOp(t[1]), t[2])
+        t[0] = UnOpNode(UnOp(t[1]), t[2], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -287,7 +287,7 @@ def p_postfix_expression(t):
                           | lvalue INC_OP
                           | lvalue DEC_OP'''
     if len(t) > 2:
-        t[0] = UnOpNode(UnOp(t[2]), t[1])
+        t[0] = UnOpNode(UnOp(t[2]), t[1], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -309,14 +309,14 @@ def p_if(t):
           | IF LPAREN logical_expression RPAREN statement ELSE statement'''
 
     if len(t) > 6:
-        t[0] = IfNode(t[3], t[5], t[7])
+        t[0] = IfNode(t[3], t[5], t[7], row=t.lexer.lineno)
     else:
-        t[0] = IfNode(t[3], t[5])
+        t[0] = IfNode(t[3], t[5], row=t.lexer.lineno)
 
 
 def p_assignment(t):
     '''assignment : lvalue ASSIGN rvalue'''
-    t[0] = AssignNode(t[1], t[3])
+    t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
 
 
 def p_rvalue(t):
@@ -324,7 +324,7 @@ def p_rvalue(t):
               | array_value
               | lvalue ASSIGN rvalue'''
     if len(t) > 2:
-        t[0] = AssignNode(t[1], t[3])
+        t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
     else:
         t[0] = t[1]
 
@@ -333,24 +333,24 @@ def p_simple_rvalue(t):
     '''simple_rvalue : logical_expression
                      | lvalue ASSIGN simple_rvalue'''
     if len(t) > 2:
-        t[0] = AssignNode(t[1], t[3])
+        t[0] = AssignNode(t[1], t[3], row=t.slice[1].lineno)
     else:
         t[0] = t[1]
 
 
 def p_string(t):
     '''string : STRING'''
-    t[0] = LiteralNode(t[1])
+    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
 
 
 def p_call(t):
     '''call : ident LPAREN args_list RPAREN'''
-    t[0] = CallNode(t[1], *t[3].childs)
+    t[0] = CallNode(t[1], *t[3].childs, row=t.lexer.lineno)
 
 
 def p_function_definition(t):
     '''function_definition : type ident LPAREN arguments_declaration_list RPAREN block'''
-    t[0] = FunctionNode(t[1], t[2], t[4].childs, *t[6].childs)
+    t[0] = FunctionNode(t[1], t[2].name, t[4].childs, *t[6].childs, row=t.lexer.lineno)
 
 
 def p_arguments_declaration_list(t):
@@ -361,14 +361,14 @@ def p_arguments_declaration_list(t):
         t[1].add_child(t[3])
         t[0] = t[1]
     elif len(t) > 1:
-        t[0] = StatementListNode(t[1])
+        t[0] = StatementListNode(t[1], row=t.lexer.lineno)
     else:
-        t[0] = StatementListNode()
+        t[0] = StatementListNode(row=t.lexer.lineno)
 
 
 def p_argument_declaration(t):
     '''argument_declaration : type ident'''
-    t[0] = VarsDeclNode(t[1], t[2])
+    t[0] = VarsDeclNode(t[1], t[2], row=t.lexer.lineno)
 
 
 def p_args_list(t):
@@ -379,32 +379,32 @@ def p_args_list(t):
         t[1].add_child(t[3])
         t[0] = t[1]
     elif len(t) > 1:
-        t[0] = StatementListNode(t[1])
+        t[0] = StatementListNode(t[1], row=t.lexer.lineno)
     else:
-        t[0] = StatementListNode()
+        t[0] = StatementListNode(row=t.lexer.lineno)
 
 def p_vars_declaration(t):
     '''vars_declaration : type init_declarator_list
                         | type_array init_array_declarator_list'''
     if len(t) > 3:
-        t[0] = VarsDeclNode(t[1], *t[4].childs)
+        t[0] = VarsDeclNode(t[1], *t[4].childs, row=t.lexer.lineno)
     else:
-        t[0] = VarsDeclNode(t[1], *t[2].childs)
+        t[0] = VarsDeclNode(t[1], *t[2].childs, row=t.lexer.lineno)
 
 
 def p_ident(t):
     '''ident : IDENT'''
-    t[0] = IdentNode(t[1])
+    t[0] = IdentNode(t[1], row=t.lexer.lineno)
 
 
 def p_type_array(t):
     '''type_array : IDENT BRACKETS'''
-    t[0] = Type(t[1], 1)
+    t[0] = Type(t[1], 1, row=t.lexer.lineno)
 
 
 def p_type(t):
     '''type : IDENT'''
-    t[0] = Type(t[1])
+    t[0] = Type(t[1], row=t.lexer.lineno)
 
 
 
@@ -415,7 +415,7 @@ def p_init_declarator_list(t):
         t[1].add_child(t[3])
         t[0] = t[1]
     else:
-        t[0] = StatementListNode(t[1])
+        t[0] = StatementListNode(t[1], row=t.lexer.lineno)
 
 
 def p_init_array_declarator_list(t):
@@ -425,7 +425,7 @@ def p_init_array_declarator_list(t):
         t[1].add_child(t[3])
         t[0] = t[1]
     else:
-        t[0] = StatementListNode(t[1])
+        t[0] = StatementListNode(t[1], row=t.lexer.lineno)
 
 
 def p_init_declarator(t):
@@ -442,12 +442,12 @@ def p_init_array_declarator(t):
 
 def p_ident_initializer(t):
     '''ident_initializer : ident ASSIGN simple_rvalue'''
-    t[0] = AssignNode(t[1], t[3])
+    t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
 
 
 def p_array_initializer(t):
     '''array_initializer : ident ASSIGN array_value'''
-    t[0] = AssignNode(t[1], t[3])
+    t[0] = AssignNode(t[1], t[3], row=t.lexer.lineno)
 
 
 def p_array_value(t):
@@ -455,16 +455,16 @@ def p_array_value(t):
                    | NEW type BRACKETS LBRACE args_list RBRACE
                    | NEW type LBRACKET logical_expression RBRACKET LBRACE args_list RBRACE'''
     if len(t) == 6:
-        t[0] = ArrayIdentNode(t[2], t[4])
+        t[0] = ArrayIdentNode(t[2], t[4], row=t.lexer.lineno)
     elif len(t) == 7:
-        t[0] = ArrayIdentNode(t[2], None, *t[5].childs)
+        t[0] = ArrayIdentNode(t[2], None, *t[5].childs, row=t.lexer.lineno)
     else:
-        t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs)
+        t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs, row=t.lexer.lineno)
 
 
 def p_array_ident(t):
     '''array_ident : ident'''
-    t[0] = IdentNode(t[1])
+    t[0] = IdentNode(t[1], row=t.lexer.lineno)
 
 
 def p_lvalue(t):
@@ -475,12 +475,12 @@ def p_lvalue(t):
 
 def p_get_element(t):
     '''get_element : ident LBRACKET logical_expression RBRACKET'''
-    t[0] = ElementNode(t[1], t[3])
+    t[0] = ElementNode(t[1], t[3], row=t.lexer.lineno)
 
 
 def p_for(t):
     '''for : FOR LPAREN expression_list SEMICOLON for_condition SEMICOLON expression_list RPAREN statement'''
-    t[0] = ForNode(t[3], t[5], t[7], t[9])
+    t[0] = ForNode(t[3], t[5], t[7], t[9], row=t.lexer.lineno)
 
 
 def p_for_condition(t):
@@ -492,23 +492,23 @@ def p_for_condition(t):
 
 def p_dowhile(t):
     '''dowhile : DO statement WHILE LPAREN logical_expression RPAREN semicolons'''
-    t[0] = DoWhileNode(t[2], t[5])
+    t[0] = DoWhileNode(t[2], t[5], row=t.lexer.lineno)
 
 
 def p_while(t):
     '''while : WHILE LPAREN logical_expression RPAREN statement'''
-    t[0] = WhileNode(t[3], t[5])
+    t[0] = WhileNode(t[3], t[5], row=t.lexer.lineno)
 
 
 def p_bool_value(t):
     '''bool_value : TRUE
                   | FALSE'''
-    t[0] = LiteralNode(t[1])
+    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
 
 
 def p_expression_number(t):
     'number : NUMBER'
-    t[0] = LiteralNode(t[1])
+    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
 
 
 def p_semicolons(p):
@@ -517,7 +517,7 @@ def p_semicolons(p):
 
 
 def p_error(t):
-    print("Syntax error in input!")
+    logger.error(str(t.lineno) + ': \'' + t.value + '\'' + ': syntax error')
 
 
 parser = yacc.yacc()

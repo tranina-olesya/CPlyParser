@@ -103,15 +103,20 @@ s6 = '''
 
 s7 = '''
     int c = 5;
-    float func1(float a) {
-      float r = 0.7 * a;
-      r = r + c;
-      return r;
+    
+    float f1(float a, float st) {
+        int c = 1;
+        
+        float r = 7 * 2;
+        r = r + c;
+        return r;
     }
+    
     int main()
     {
-        int x = input();
-        float r = func1(7 + 0.2 + x);
+        int x;
+        x = input();
+        float r = f1(7 + 0.2, 70);
     }
     '''
 
