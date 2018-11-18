@@ -12,4 +12,5 @@ class CallCounted:
 
 
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 logger.error = CallCounted(logger.error)

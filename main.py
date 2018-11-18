@@ -102,23 +102,17 @@ s6 = '''
     '''
 
 s7 = '''
-    int c = 5;
+    float c = 2.0 + -5;
     
-    float f1(float a, float st) {
-        int c = 1;
-        
-        int r = 7 * 2;
-        r = c *= 0;
-        return r;
+    int func1(float a) {
+      float r = 0.7 * a;
+      r += r + c;
+      return r;
     }
-    int main()
-    {
-        int x;
-        x += 2 + 2;
-        /*
-        x = input();
-        float r = f1(7 + 0.2, 70); */
-    }
+    
+    float a = 2 && 0 || !1.0;
+    //float x = -(81 % (3 + -1)) && 2.0;
+    //float r = func1(7 + 0.2 + x);
     '''
 
 #print(*build_tree(s7), sep=os.linesep)

@@ -293,7 +293,6 @@ def p_postfix_expression(t):
                           | lvalue INC_OP
                           | lvalue DEC_OP'''
     if len(t) > 2:
-        # t[0] = UnOpNode(UnOp(t[2]), t[1], row=t.lexer.lineno)
         t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], LiteralNode(str(1)), row=t.lexer.lineno), row=t.lexer.lineno)
     else:
         t[0] = t[1]
@@ -305,6 +304,7 @@ def p_group(t):
              | number
              | string
              | bool_value'''
+
     if len(t) > 2:
         t[0] = t[2]
     else:
