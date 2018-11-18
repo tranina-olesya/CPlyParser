@@ -474,15 +474,15 @@ def p_array_initializer(t):
 
 
 def p_array_value(t):
-    '''array_value : NEW type LBRACKET logical_expression RBRACKET
-                   | NEW type BRACKETS LBRACE args_list RBRACE
-                   | NEW type LBRACKET logical_expression RBRACKET LBRACE args_list RBRACE'''
+    '''array_value : NEW IDENT LBRACKET logical_expression RBRACKET
+                   | NEW IDENT BRACKETS LBRACE args_list RBRACE
+                   | NEW IDENT LBRACKET logical_expression RBRACKET LBRACE args_list RBRACE'''
     if len(t) == 6:
-        t[0] = ArrayIdentNode(t[2], t[4], row=t.lexer.lineno)
+        t[0] = ArrayIdentNode(Type(t[2], 1, row=t.lexer.lineno), t[4], row=t.lexer.lineno)
     elif len(t) == 7:
-        t[0] = ArrayIdentNode(t[2], None, *t[5].childs, row=t.lexer.lineno)
+        t[0] = ArrayIdentNode(Type(t[2], 1, row=t.lexer.lineno), None, *t[5].childs, row=t.lexer.lineno)
     else:
-        t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs, row=t.lexer.lineno)
+        t[0] = ArrayIdentNode(Type(t[2], 1, row=t.lexer.lineno), t[4], *t[7].childs, row=t.lexer.lineno)
 
 
 def p_array_ident(t):

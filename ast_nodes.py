@@ -106,14 +106,15 @@ class Type(AstNode):
         self.rang = rang
 
     def is_castable_to(self, cast_type)->bool:
-        if cast_type.name == self.name:
-            return True
-        elif cast_type.name == BaseTypes.String:
-            return True
-        elif cast_type.name == BaseTypes.Float:
-            return self.name == BaseTypes.Int
-        elif cast_type.name == BaseTypes.Int:
-            return False
+        if cast_type.rang == self.rang == 0:
+            if cast_type.name == self.name:
+                return True
+            elif cast_type.name == BaseTypes.String:
+                return True
+            elif cast_type.name == BaseTypes.Float:
+                return self.name == BaseTypes.Int
+            elif cast_type.name == BaseTypes.Int:
+                return False
         return False
 
     def __str__(self) -> str:
@@ -125,6 +126,7 @@ class ExprNode(AstNode):
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
         self.data_type = data_type
+        self.const = None
 
 
 class LiteralNode(ExprNode):
@@ -223,20 +225,14 @@ class BinOpNode(ExprNode):
                 self.data_type = self.arg1.data_type
             elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
                 self.data_type = self.arg2.data_type
-                c = None
-                if type(self.arg1) in (LiteralNode, BinOpNode, UnOpNode, CastNode):
-                    c = self.arg1.const
+                c = self.arg1.const
                 self.arg1 = CastNode(self.arg1, self.data_type, c)
             elif self.arg2.data_type.is_castable_to(self.arg1.data_type):
                 self.data_type = self.arg1.data_type
-                c = None
-                if type(self.arg2) in (LiteralNode, BinOpNode, UnOpNode, CastNode):
-                    c = self.arg2.const
+                c = self.arg2.const
                 self.arg2 = CastNode(self.arg2, self.data_type, c)
 
-            if (type(self.arg1) in (LiteralNode, BinOpNode, UnOpNode, CastNode)) \
-                    and (type(self.arg2) in (LiteralNode, BinOpNode , UnOpNode, CastNode))\
-                    and self.arg1.const is not None and self.arg2.const is not None and self.data_type:
+            if self.arg1.const is not None and self.arg2.const is not None and self.data_type:
                 if self.op.value == '&&':
                     self.const = 1 if self.arg1.const and self.arg2.const else 0
                 elif self.op.value == '||':
@@ -291,11 +287,11 @@ class UnOpNode(ExprNode):
         self.arg.semantic_check(context)
         self.data_type = self.arg.data_type
         self.data_type = self.arg.data_type
-        if type(self.arg) in (LiteralNode, BinOpNode, UnOpNode, CastNode):
-            if self.op.value == '!':
-                self.const = 1 if not self.arg else 0
-            else:
-                self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
+
+        if self.op.value == '!':
+            self.const = 1 if not self.arg else 0
+        else:
+            self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
 
 
 class StmtNode(ExprNode):
@@ -319,8 +315,7 @@ class VarsDeclNode(StmtNode):
     def semantic_check(self, context: Context = None):
         for el in self.vars_list:
             if type(el) is AssignNode:
-                el: AssignNode = el.var
-                el: IdentNode
+                el = el.var
             if context.find_var(el.name) not in context.vars:
                 context.add_var(el)
                 el.index = len(context.vars) - 1
@@ -438,14 +433,11 @@ class AssignNode(StmtNode):
             self.data_type = self.var.data_type
             if str(self.var.data_type) != str(self.val.data_type):
                 if self.val.data_type.is_castable_to(self.var.data_type):
-                    c = None
-                    if type(self.val) in (LiteralNode, BinOpNode, UnOpNode, CastNode):
-                        c = self.val.const
+                    c = self.val.const
                     self.val = CastNode(self.val, self.data_type, c)
                 else:
                     logger.error(str(self.var.row) + ': ' + str(self.var.name) + ': value does not match \'' + str(self.data_type) + '\' type')
-            if type(self.val) in (LiteralNode, BinOpNode, UnOpNode, CastNode):
-                self.const = self.val.const
+            self.const = self.val.const
 
     def __str__(self) -> str:
         c = d = sb = ''
@@ -470,23 +462,50 @@ class ElementNode(ExprNode):
         return self.name, self.num
 
     def __str__(self) -> str:
+        if self.data_type:
+            return '[] (dtype=' + str(self.data_type) + ')'
         return '[]'
+
+    def semantic_check(self, context: Context = None):
+        v: IdentNode = context.find_var(self.name.name)
+        self.data_type = Type(v.data_type.name.value, row=self.row)
+        for each in self.childs:
+            each.semantic_check(context)
 
 
 class ArrayIdentNode(ExprNode):
-    def __init__(self, data_type: Type, num: ExprNode = None, *elements: Tuple[ExprNode],
+    def __init__(self, data_type: Type, num: ExprNode = None, *elements: [ExprNode],
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
         self.data_type = data_type
-        self.num = num if num else _empty
-        self.elements = elements if elements else (_empty,)
+        self.num = num if num else LiteralNode(str(len(elements)), row=self.row)
+        self.elements = list(elements) if elements else list()
 
     @property
     def childs(self) -> Tuple[AstNode]:
-        return (*self.elements,)
+        a = (*self.elements,)
+        return (*self.elements,) if self.elements else (_empty,)
 
     def __str__(self) -> str:
-        return self.data_type.name.value + '[' + str(self.num) + ']'
+        return self.data_type.name.value + '[' + str(self.num.const) + ']'
+
+    def semantic_check(self, context: 'Context' = None):
+        for each in (*self.elements, self.num):
+            each.semantic_check(context)
+        if self.num.const is None:
+            logger.error(str(self.row) + ': количество элементов не const, подумаю потом')
+        if len(self.elements) != 0:
+            if len(self.elements) > self.num.const:
+                logger.error(str(self.row) + ': too many elements: ' + str(self.num.const) + ' expected, ' + str(len(self.elements)) + ' given')
+            elif len(self.elements) < self.num.const:
+                logger.error(str(self.row) + ': not enough elements ' + str(self.num.const) + ' expected, ' + str(len(self.elements)) + ' given')
+        for i, el in enumerate(self.elements):
+            el: ExprNode
+            if self.data_type.name.value != str(el.data_type):
+                if el.data_type.is_castable_to(Type(self.data_type.name.value)):
+                    self.elements[i] = CastNode(el, Type(self.data_type.name.value))
+                else:
+                    logger.error(str(self.row) + ': type of element ' + str(i) + ' does not match type of array')
 
 
 class ReturnNode(StmtNode):

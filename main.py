@@ -102,16 +102,18 @@ s6 = '''
     '''
 
 s7 = '''
-    float c = 2.0 + -5;
+    //float c = 2.0 + -5;
+    //int[] ar = new int[2];
+    //float a = ar[2] * 1;
+    float[] ad = new float[] { 1, 1+1.0};
     
     int func1(float a) {
       float r = 0.7 * a;
-      r += r + c;
+      //r += r + c;
       return r;
     }
-    
-    float a = 2 && 0 || !1.0;
     //float x = -(81 % (3 + -1)) && 2.0;
+    
     //float r = func1(7 + 0.2 + x);
     '''
 
