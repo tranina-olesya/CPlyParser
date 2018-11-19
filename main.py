@@ -102,21 +102,39 @@ s6 = '''
     '''
 
 s7 = '''
-    //float c = 2.0 + -5;
-    //int[] ar = new int[2];
-    //float a = ar[2] * 1;
+    float c = 2.0 + -5;
+    /*int[] ar = new int[2];
+    float a = ar[2] * 1;
     float[] ad = new float[] { 1, 1+1.0};
-    
+    */
     int func1(float a) {
       float r = 0.7 * a;
-      //r += r + c;
+      r += r + c;
       return r;
     }
-    //float x = -(81 % (3 + -1)) && 2.0;
+    float x = -(81 % (3 + -1)) && 2.0;
     
-    //float r = func1(7 + 0.2 + x);
+    float r = func1(7 + 0.2 + x);
     '''
 
+s8 = '''
+    int a = 0, b;
+    
+    int func1()
+    {
+        int a;
+        float v = a;
+    }
+    float x = 0;
+    
+    int func2(int a)
+    {
+        float as = a + b, dd = as + 0;
+        dd = as = x;
+    }
+    float e;
+
+'''
 #print(*build_tree(s7), sep=os.linesep)
 
 print_tree(s7)

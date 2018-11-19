@@ -54,9 +54,18 @@ class Context(object):
         self.vars = []
         self.functions = [FunctionNode(Type('int'), 'input')]
         self.parent = parent
+        self.params = []
 
     def add_var(self, var: 'IdentNode'):
         self.vars.append(var)
+        loc_context = self
+        if loc_context.parent:
+            while loc_context.parent.parent:
+                loc_context = loc_context.parent
+            loc_context.vars.append(var)
+
+    def add_param(self, var: 'IdentNode'):
+        self.params.append(var)
 
     def add_function(self, func: 'FunctionNode'):
         self.functions.append(func)
@@ -65,12 +74,31 @@ class Context(object):
         loc_var = None
         loc_context = self
         while not loc_var and loc_context:
-            loc_var = list(filter(lambda x: x.name == var_name, loc_context.vars))
+            loc_var = list(filter(lambda x: x.name == var_name, (*loc_context.vars, *loc_context.params)))
             if loc_var:
                 loc_var = loc_var[0]
             loc_context = loc_context.parent
 
         return loc_var
+
+    def find_param(self, param_name):
+        loc_context = self
+        loc_var = None
+        if loc_context.parent:
+            while loc_context.parent.parent:
+                loc_context = loc_context.parent
+            loc_var = list(filter(lambda x: x.name == param_name, loc_context.params))
+            if loc_var:
+                loc_var = loc_var[0]
+
+        return loc_var
+
+    def get_function_context(self):
+        loc_context = self
+        if loc_context.parent:
+            while loc_context.parent.parent:
+                loc_context = loc_context.parent
+        return loc_context
 
     def find_function(self, func_name):
         loc_context = self
@@ -78,6 +106,16 @@ class Context(object):
             loc_context = loc_context.parent
         func = list(filter(lambda x: x.name == func_name, loc_context.functions))
         return func[0] if func else None
+
+    def get_next_local_num(self):
+        loc_context = self
+        if loc_context.parent:
+            while loc_context.parent.parent:
+                loc_context = loc_context.parent
+        return len(loc_context.vars)
+
+    def get_next_param_num(self):
+        return len(self.params)
 
 
 class BaseTypes(Enum):
@@ -316,13 +354,16 @@ class VarsDeclNode(StmtNode):
         for el in self.vars_list:
             if type(el) is AssignNode:
                 el = el.var
-            if context.find_var(el.name) not in context.vars:
+            if context.find_var(el.name) in context.get_function_context().vars:
+                logger.error(str(self.row) + ': ' + str(el.name) + ': identifier was already declared')
+            elif context.find_var(el.name) in context.get_function_context().params:
+                logger.error(str(self.row) + ': ' + str(el.name) + ': identifier(param) was already declared')
+            else:
+                el.index = context.get_next_local_num()
                 context.add_var(el)
-                el.index = len(context.vars) - 1
                 el.data_type = self.vars_type
                 el.var_type = VarType.Local if context.parent else VarType.Global
-            else:
-                logger.error(str(self.row) + ': ' + str(el.name) + ': identifier was already declared')
+
         for each in self.childs:
             each.semantic_check(context)
 
@@ -404,8 +445,9 @@ class FunctionNode(StmtNode):
         context.add_function(self)
         context = Context(context)
         for el in self.params:
-            context.add_var(el)
-            el.index = len(context.vars) - 1
+            el.index = context.get_next_param_num()
+            context.add_param(el)
+            #context.add_var(el)
             el.var_type = VarType.Param
 
         context = Context(context)
@@ -493,7 +535,7 @@ class ArrayIdentNode(ExprNode):
         for each in (*self.elements, self.num):
             each.semantic_check(context)
         if self.num.const is None:
-            logger.error(str(self.row) + ': количество элементов не const, подумаю потом')
+            logger.error(str(self.row) + ': length of array must be const')
         if len(self.elements) != 0:
             if len(self.elements) > self.num.const:
                 logger.error(str(self.row) + ': too many elements: ' + str(self.num.const) + ' expected, ' + str(len(self.elements)) + ' given')
