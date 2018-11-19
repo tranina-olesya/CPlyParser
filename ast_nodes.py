@@ -78,19 +78,6 @@ class Context(object):
             if loc_var:
                 loc_var = loc_var[0]
             loc_context = loc_context.parent
-
-        return loc_var
-
-    def find_param(self, param_name):
-        loc_context = self
-        loc_var = None
-        if loc_context.parent:
-            while loc_context.parent.parent:
-                loc_context = loc_context.parent
-            loc_var = list(filter(lambda x: x.name == param_name, loc_context.params))
-            if loc_var:
-                loc_var = loc_var[0]
-
         return loc_var
 
     def get_function_context(self):

@@ -81,7 +81,7 @@ def t_BRACKETS(t):
 
 def t_STRING(t):
     r'\".*\"'
-    return t
+    return t # переписать
 
 
 def t_ccode_comment(t):
