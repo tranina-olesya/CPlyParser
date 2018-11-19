@@ -120,21 +120,15 @@ s7 = '''
 s8 = '''
     int a = 0, b;
     
-    int func1()
+    float func1()
     {
         int a;
         float v = a;
+        return;
     }
-    float x = 0;
     
-    int func2(int a)
-    {
-        float as = a + b, dd = as + 0;
-        dd = as = x;
-    }
-    float e;
 
 '''
 #print(*build_tree(s7), sep=os.linesep)
 
-print_tree(s7)
+print_tree(s8)

@@ -109,12 +109,6 @@ class BaseTypes(Enum):
     Int = 'int'
     Float = 'float'
     String = 'str'
-
-
-class FunctionTypes(Enum):
-    Int = 'int'
-    Float = 'float'
-    String = 'str'
     Void = 'void'
 
 
@@ -350,9 +344,10 @@ class VarsDeclNode(StmtNode):
                 context.add_var(el)
                 el.data_type = self.vars_type
                 el.var_type = VarType.Local if context.parent else VarType.Global
-
         for each in self.childs:
             each.semantic_check(context)
+        if self.vars_type is None or self.vars_type.name == BaseTypes.Void:
+            logger.error(str(self.row) + ': vars cannot be void')
 
 
 class CallNode(StmtNode):
@@ -434,12 +429,16 @@ class FunctionNode(StmtNode):
         for el in self.params:
             el.index = context.get_next_param_num()
             context.add_param(el)
-            #context.add_var(el)
             el.var_type = VarType.Param
-
         context = Context(context)
+        ret = None
         for each in self.childs:
+            if type(each) is ReturnNode:
+                ret = each
+                each.data_type = self.data_type
             each.semantic_check(context)
+        if self.data_type.name is not BaseTypes.Void and not ret:
+            logger.error(str(self.row) + ': function must return some value' )
 
 
 class AssignNode(StmtNode):
@@ -542,6 +541,7 @@ class ReturnNode(StmtNode):
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
         self.val = val
+        self.data_type = None
 
     @property
     def childs(self) -> Tuple[ExprNode]:
@@ -550,7 +550,23 @@ class ReturnNode(StmtNode):
         else:
             return tuple()
 
+    def semantic_check(self, context: 'Context' = None):
+        for each in self.childs:
+            each.semantic_check(context)
+        if self.val:
+            if self.data_type.name == BaseTypes.Void:
+                logger.error(str(self.row) + ': void function must not return any value')
+            elif str(self.val.data_type) != str(self.data_type) and self.val.data_type.is_castable_to(self.data_type):
+                self.val = CastNode(self.val, self.data_type, row=self.row)
+            else:
+                logger.error(str(self.row) + ': function must return \'' + str(self.data_type) + '\' value')
+        elif self.data_type.name is not BaseTypes.Void:
+            logger.error(str(self.row) + ': function must return \'' + str(self.data_type) + '\' value')
+
+
     def __str__(self) -> str:
+        if self.data_type:
+            return 'return (dtype=' + str(self.data_type) + ')'
         return 'return'
 
 
