@@ -20,11 +20,12 @@ s1 = '''
             {
                 c = minus(plus(1, i), i);
                 if ( c > 90)
-                    return;
+                    return 2;
             }
+            return 2;
         }
         ;
-        int pass() { }
+        void pass() { }
     '''
 
 s2 = '''
@@ -76,9 +77,9 @@ s4 = '''
         int res = 0, s;
         int[] a = new int[] {1,2,3,4,5};
         float b = 0.3;
-        float[] fl = new int[2] {1.2, b}; 
+        float[] fl = new float[2] {1.2, b}; 
         
-        for (int i = 1; i < len(a); i++) 
+        for (int i = 1; i < 3; i++) 
             a[i] = a[i-1]*2;
     }
     '''
@@ -96,37 +97,37 @@ s5 = '''
 s6 = '''
     int t()
     {
-        int[] a = new int[5], b = new int[] {1,2+0, a}, c = new int[1] {1}, d;
-        a[9] = int(a[o+1]);
+        int[] a = new int[5], b = new int[] {1,2+0}, c = new int[1] {1}, d;
+        //a[9] = int(a[1+1]);
+        return a[1];
     }
     '''
 
 s7 = '''
     float c = 2.0 + -5;
-    /*int[] ar = new int[2];
+    int[] ar = new int[2];
     float a = ar[2] * 1;
     float[] ad = new float[] { 1, 1+1.0};
-    */
-    int func1(float a) {
+    float func1(float a) {
       float r = 0.7 * a;
       r += r + c;
       return r;
     }
-    float x = -(81 % (3 + -1)) && 2.0;
+    float x = -(81 % (3 + -1)) + 2.0;
     
     float r = func1(7 + 0.2 + x);
     '''
 
 s8 = '''
-    int a = 0, b;
-    
-    float func1()
+    void func1()
     {
-        int a;
-        float v = a;
-        return;
+    bool aa = 1.1 && 0 || true;
+    int q;
+        int[] a = new int[2];
+        str d = "value is\t" + 1.0;
+        a = new int[4] {1,1,1,1};
+        d[1];
     }
-    
 
 '''
 #print(*build_tree(s7), sep=os.linesep)
