@@ -63,25 +63,15 @@ t_OR = r'\|\|'
 t_AND = r'&&'
 t_NOT = r'!'
 t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
-
+t_BRACKETS = r'\[\s*\]'
 t_ignore = ' \r\t'
-
+t_STRING = '\"[^"]*\"'
 
 def t_IDENT(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
     if t.value in reserved:
         t.type = reserved[t.value]
     return t
-
-
-def t_BRACKETS(t):
-    r'\[\s*\]'
-    return t
-
-
-def t_STRING(t):
-    r'\"[^"]*\"'
-    return t # переписать
 
 
 def t_ccode_comment(t):

@@ -13,7 +13,7 @@ s1 = '''/*
             return a--;
         }
         */
-        int main(float res)
+        int main(float res, int s)
         {
             float a = 0;
             {
@@ -106,7 +106,7 @@ s6 = '''
     '''
 
 s7 = '''
-    float c = 2.0 + -5;
+    float c = 2.10e2 + -5;
     int[] ar = new int[2];
     float a = ar[2] * 1;
     float[] ad = new float[] { 1, 1+1.0};
@@ -126,14 +126,13 @@ s8 = '''
     {
         bool aa = -1.1 && "" || false;
         int q;
-        /*int[] a = new int[2];
-        string d = "a";
+        int[] a = new int[2];
+        string d = "a" + "";
         a = new int[4] {1,1,1,1};
         d[1];
-        */
+        
     }
 
 '''
-#print(*build_tree(s7), sep=os.linesep)
 
-print_tree(s7)
+print_tree(s8)
