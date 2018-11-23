@@ -158,7 +158,7 @@ class LiteralNode(ExprNode):
         self.literal = literal
         self.const = eval(literal)
         if type(self.const) == str: #type(self.const).__name__
-            self.data_type = Type('string',self.data_type, row=self.row)
+            self.data_type = Type('string', row=self.row)
         else:
             self.data_type = Type(type(self.const).__name__, row=self.row)
 
@@ -255,7 +255,6 @@ class BinOpNode(ExprNode):
             each.semantic_check(context)
         if not self.arg1.data_type or not self.arg2.data_type:
             return
-
         if self.op.value in ( '&&', '||'):
             self.data_type = Type('bool')
             if self.arg1.data_type.name is not BaseTypes.Bool:
@@ -277,10 +276,10 @@ class BinOpNode(ExprNode):
             elif self.op.value == '||':
                 self.const = bool(self.arg1.const or self.arg2.const)
             elif self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name not in (BaseTypes.Int, BaseTypes.Float, BaseTypes.Bool):
-                if self.op.value == '+':
-                    self.const = self.arg1.const + self.arg2.const
+                if self.op.value in ('+', '==', '!='):
+                    self.const = eval('\"' + str(self.arg1.const) + '\"' + self.op.value + '\"' + str(self.arg2.const) + '\"')
                 else:
-                    logger.error(str(self.row) + ': pass')
+                    logger.error(str(self.row) + ': pass1')
             else:
                 self.const = eval(str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
             if self.op.value in ('>', '<','>=','<=','==','!=', '&&', '||'):
@@ -342,7 +341,7 @@ class UnOpNode(ExprNode):
             elif self.data_type.name in (BaseTypes.Float, BaseTypes.Int):
                 self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
             else:
-                logger.error(str(self.row) + ': pass')
+                logger.error(str(self.row) + ': pass2')
 
 
 
@@ -536,7 +535,7 @@ class ElementNode(ExprNode):
     def semantic_check(self, context: Context = None):
         v: IdentNode = context.find_var(self.name.name)
         if v.data_type.rang == 0 and v.data_type.name is not BaseTypes.String:
-            logger.error(str(self.row) + ': pass')
+            logger.error(str(self.row) + ': pass3')
             return
         self.data_type = Type(v.data_type.name.value, row=self.row)
         for each in self.childs:

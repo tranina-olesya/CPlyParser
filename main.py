@@ -124,13 +124,13 @@ s7 = '''
 s8 = '''
     void func1()
     {
-        bool aa = -1.1 && "" || false;
-        int q;
-        int[] a = new int[2];
+        //bool aa = -1.1 && "" || false;
+        bool q = "1" + "1";
+        /*int[] a = new int[2];
         string d = "a" + "";
         a = new int[4] {1,1,1,1};
         d[1];
-        
+        */
     }
 
 '''
