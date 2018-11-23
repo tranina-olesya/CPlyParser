@@ -2,27 +2,28 @@ from cTreeParser import *
 import os
 
 
-s1 = '''
+s1 = '''/*
         int plus(int a, int b)
         {
             int res = a + b;
             return res;
         }
-        float minus(float a, float b)
+        float minus(float a)
         {
-            return a - b;
+            return a--;
         }
-        
+        */
         int main(float res)
         {
-            float c = 0;
-            for(int i = 0; i < 5; i++)
+            float a = 0;
             {
-                c = minus(plus(1, i), i);
-                if ( c > 90)
-                    return 2;
+                if(a)
+                    return 0;
+                else
+                {
+                    
+                }
             }
-            return 2;
         }
         ;
         void pass() { }
@@ -30,7 +31,7 @@ s1 = '''
 
 s2 = '''
         int a, b;
-        int test1() 
+        void test1() 
         {
             int g, g2 = g;
     
@@ -41,7 +42,7 @@ s2 = '''
                 for(; a < b;)
                     if (a > 7 + b) {
                         int c = a + b * (2 - 1) + 0;  // comment 2
-                        str ab = "98\tура";
+                        string ab = "98\tура";
                     }
                     else if (a > 4)   
                         ab = ab + "a";         
@@ -88,9 +89,10 @@ s5 = '''
     void test4()
     {
         int a = 0, b = 1, c = 2, d = 3;
-        a = b = c = d;
-        a = b + -2;
+        a = b = c = d = -1;
+        a = -(b + 2);
         a++;
+        
     }
     '''
 
@@ -108,7 +110,8 @@ s7 = '''
     int[] ar = new int[2];
     float a = ar[2] * 1;
     float[] ad = new float[] { 1, 1+1.0};
-    float func1(float a) {
+    float func1(float a) 
+    {
       float r = 0.7 * a;
       r += r + c;
       return r;
@@ -121,15 +124,16 @@ s7 = '''
 s8 = '''
     void func1()
     {
-    bool aa = 1.1 && 0 || true;
-    int q;
-        int[] a = new int[2];
-        str d = "value is\t" + 1.0;
+        bool aa = -1.1 && "" || false;
+        int q;
+        /*int[] a = new int[2];
+        string d = "a";
         a = new int[4] {1,1,1,1};
         d[1];
+        */
     }
 
 '''
 #print(*build_tree(s7), sep=os.linesep)
 
-print_tree(s8)
+print_tree(s7)

@@ -108,7 +108,7 @@ class Context(object):
 class BaseTypes(Enum):
     Int = 'int'
     Float = 'float'
-    String = 'str'
+    String = 'string'
     Bool = 'bool'
     Void = 'void'
 
@@ -157,7 +157,10 @@ class LiteralNode(ExprNode):
             literal = literal.capitalize()
         self.literal = literal
         self.const = eval(literal)
-        self.data_type = Type(type(self.const).__name__, row=self.row)
+        if type(self.const) == str: #type(self.const).__name__
+            self.data_type = Type('string',self.data_type, row=self.row)
+        else:
+            self.data_type = Type(type(self.const).__name__, row=self.row)
 
     def __str__(self) -> str:
         return '{0} ({1})'.format(self.literal, self.data_type)
@@ -250,38 +253,39 @@ class BinOpNode(ExprNode):
     def semantic_check(self, context: Context = None):
         for each in self.childs:
             each.semantic_check(context)
-        if self.arg1.data_type and self.arg2.data_type:
-            '''if self.op.value in ( '&&', '||'):
-                self.data_type = Type('bool')
-                if self.arg1.data_type.name is not BaseTypes.Bool:
-                    self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
-                if self.arg2.data_type.name is not BaseTypes.Bool:
-                    self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
-            el'''
-            if str(self.arg1.data_type) == str(self.arg2.data_type):
-                self.data_type = self.arg1.data_type
-            elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
-                self.data_type = self.arg2.data_type
-                self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
-            elif self.arg2.data_type.is_castable_to(self.arg1.data_type):
-                self.data_type = self.arg1.data_type
-                self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
+        if not self.arg1.data_type or not self.arg2.data_type:
+            return
 
-            if self.arg1.const is not None and self.arg2.const is not None and self.data_type:
-                if self.op.value == '&&':
-                    self.const = bool(self.arg1.const and self.arg2.const)
-                elif self.op.value == '||':
-                    self.const = bool(self.arg1.const or self.arg2.const)
-                elif self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name not in (BaseTypes.Int, BaseTypes.Float, BaseTypes.Bool):
-                    if self.op.value == '+':
-                        self.const = self.arg1.const + self.arg2.const
-                    else:
-                        logger.error(str(self.row) + ': pass')
+        if self.op.value in ( '&&', '||'):
+            self.data_type = Type('bool')
+            if self.arg1.data_type.name is not BaseTypes.Bool:
+                self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
+            if self.arg2.data_type.name is not BaseTypes.Bool:
+                self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
+        elif str(self.arg1.data_type) == str(self.arg2.data_type):
+            self.data_type = self.arg1.data_type
+        elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
+            self.data_type = self.arg2.data_type
+            self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
+        elif self.arg2.data_type.is_castable_to(self.arg1.data_type):
+            self.data_type = self.arg1.data_type
+            self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
+
+        if self.arg1.const is not None and self.arg2.const is not None and self.data_type:
+            if self.op.value == '&&':
+                self.const = bool(self.arg1.const and self.arg2.const)
+            elif self.op.value == '||':
+                self.const = bool(self.arg1.const or self.arg2.const)
+            elif self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name not in (BaseTypes.Int, BaseTypes.Float, BaseTypes.Bool):
+                if self.op.value == '+':
+                    self.const = self.arg1.const + self.arg2.const
                 else:
-                    self.const = eval(str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
-                if self.op.value in ('>', '<','>=','<=','==','!=', '&&', '||'):
-                    self.const = bool(self.const)
-                    self.data_type = Type('bool')
+                    logger.error(str(self.row) + ': pass')
+            else:
+                self.const = eval(str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
+            if self.op.value in ('>', '<','>=','<=','==','!=', '&&', '||'):
+                self.const = bool(self.const)
+                self.data_type = Type('bool')
 
     @property
     def childs(self) -> Tuple[ExprNode, ExprNode]:
@@ -329,12 +333,17 @@ class UnOpNode(ExprNode):
     def semantic_check(self, context: Context = None):
         self.arg.semantic_check(context)
         self.data_type = self.arg.data_type
-        self.data_type = self.arg.data_type
+        self.const = self.arg.const
 
-        if self.op.value == '!':
-            self.const = 1 if not self.arg else 0
-        else:
-            self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
+        if self.const is not None:
+            if self.op.value == '!':
+                self.const = not bool(self.const)
+                self.data_type = Type('bool', row=self.row)
+            elif self.data_type.name in (BaseTypes.Float, BaseTypes.Int):
+                self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
+            else:
+                logger.error(str(self.row) + ': pass')
+
 
 
 class StmtNode(ExprNode):
@@ -359,7 +368,7 @@ class VarsDeclNode(StmtNode):
         for el in self.vars_list:
             if type(el) is AssignNode:
                 el = el.var
-            if context.find_var(el.name) in context.get_function_context().vars:
+            if context.find_var(el.name) in context.vars:
                 logger.error(str(self.row) + ': ' + str(el.name) + ': identifier was already declared')
             elif context.find_var(el.name) in context.get_function_context().params:
                 logger.error(str(self.row) + ': ' + str(el.name) + ': identifier(param) was already declared')
@@ -455,14 +464,20 @@ class FunctionNode(StmtNode):
             context.add_param(el)
             el.var_type = VarType.Param
         context = Context(context)
-        ret = None
-        for each in self.childs:
-            if type(each) is ReturnNode:
-                ret = each
-                each.data_type = self.data_type
-            each.semantic_check(context)
-        if self.data_type.name is not BaseTypes.Void and not ret:
+        ret = self.find_return(self.childs)
+        if self.data_type.name is not BaseTypes.Void and ret == 0:
             logger.error(str(self.row) + ': function must return some value' )
+
+        for each in self.childs:
+            each.semantic_check(context)
+
+    def find_return(self, childs, count=0):
+        for each in childs:
+            if type(each) is ReturnNode:
+                count += 1
+                each.data_type = self.data_type
+            count = self.find_return(each.childs, count)
+        return count
 
 
 class AssignNode(StmtNode):
@@ -481,7 +496,7 @@ class AssignNode(StmtNode):
         for each in self.childs:
             each.semantic_check(context)
 
-        if self.var.data_type and self.var.data_type.name and self.val.data_type:
+        if self.var.data_type and self.var.data_type and self.val.data_type:
             self.data_type = self.var.data_type
             if str(self.var.data_type) != str(self.val.data_type):
                 if self.val.data_type.is_castable_to(self.var.data_type):
@@ -633,16 +648,24 @@ class IfNode(StmtNode):
         self.else_stmt = else_stmt
 
     @property
-    def childs(self) -> Tuple[ExprNode, StmtNode, Optional[StmtNode]]:
+    def childs(self) -> Tuple[Union[ExprNode, StmtNode, 'StatementListNode'], ...]:
         return (self.cond, self.then_stmt) + ((self.else_stmt,) if self.else_stmt else tuple())
 
     def __str__(self) -> str:
         return 'if'
 
     def semantic_check(self, context: 'Context' = None):
+        self.cond.semantic_check(context)
+        if not self.cond.data_type:
+            return
+        if self.cond.data_type.name is not BaseTypes.Bool:
+            self.cond = CastNode(self.cond, Type('bool', row=self.row), self.cond.const, row=self.row)
         context = Context(context)
-        for each in self.childs:
-            each.semantic_check(context)
+        self.then_stmt.semantic_check(context)
+        if self.else_stmt:
+            context = Context(context)
+            self.else_stmt.semantic_check(context)
+
 
 
 class ForNode(StmtNode):

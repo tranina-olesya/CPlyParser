@@ -312,8 +312,8 @@ def p_group(t):
 
 
 def p_if(t):
-    '''if : IF LPAREN logical_expression RPAREN statement
-          | IF LPAREN logical_expression RPAREN statement ELSE statement'''
+    '''if : IF LPAREN logical_expression RPAREN statement_list
+          | IF LPAREN logical_expression RPAREN statement_list ELSE statement_list'''
 
     if len(t) > 6:
         t[0] = IfNode(t[3], t[5], t[7], row=t.lexer.lineno)
