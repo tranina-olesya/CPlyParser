@@ -2,7 +2,7 @@ from cTreeParser import *
 import os
 
 
-s1 = '''/*
+s1 = '''
         int plus(int a, int b)
         {
             int res = a + b;
@@ -12,7 +12,7 @@ s1 = '''/*
         {
             return a--;
         }
-        */
+        
         int main(float res, int s)
         {
             float a = 0;
@@ -110,27 +110,31 @@ s7 = '''
     int[] ar = new int[2];
     float a = ar[2] * 1;
     float[] ad = new float[] { 1, 1+1.0};
-    float func1(float a) 
+    int func1(float a, string ab) 
     {
       float r = 0.7 * a;
       r += r + c;
-      return r;
+      return 1;
     }
-    float x = -(81 % (3 + -1)) + 2.0;
-    
-    float r = func1(7 + 0.2 + x);
+    /*float x = -(81 % (3 + -1)) + 2.0;
+    int z = 0;
+    int r = 1 + func1(7 + 0.2 + z, 12);*/
     '''
 
 s8 = '''
-    void func1()
+    float func1(int aaaaa, float aaa)
     {
-        //bool aa = -1.1 && "" || false;
-        bool q = "1" + "1";
-        /*int[] a = new int[2];
-        string d = "a" + "";
+        bool aa = -1.1;
+        int[] a = new int[2];
+        bool q = 1;
+        string d = "dsds";
         a = new int[4] {1,1,1,1};
         d[1];
-        */
+        return 1.3;
+    }
+    void main()
+    {
+        float a = func1(5, 5);
     }
 
 '''
