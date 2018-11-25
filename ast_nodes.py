@@ -262,7 +262,7 @@ class BinOpNode(ExprNode):
                 logger.error(
                     str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
                         self.arg1.data_type), str(self.arg2.data_type)))
-
+                return
         elif self.op.value in ('>', '<', '>=', '<=', '==', '!=', '&&', '||'):
             self.data_type = Type('bool')
             if self.op.value in ('&&', '||'):
@@ -270,7 +270,7 @@ class BinOpNode(ExprNode):
                     self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
                 if self.arg2.data_type.name is not BaseTypes.Bool:
                     self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
-        elif self.arg1.data_type == self.arg2.data_type:
+        if self.arg1.data_type == self.arg2.data_type:
             self.data_type = self.arg1.data_type
         elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
             self.data_type = self.arg2.data_type
@@ -281,6 +281,7 @@ class BinOpNode(ExprNode):
         else:
             logger.error(str(self.row) + ': incompatible types: \'{0}\' and \'{1}\''.format(self.arg1.data_type,
                                                                                             self.arg2.data_type))
+            return
 
         if self.arg1.const is not None and self.arg2.const is not None:
             if self.op.value == '&&':
