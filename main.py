@@ -10,19 +10,16 @@ s1 = '''
         }
         float minus(float a)
         {
-            return a--;
+            return a - 1;
         }
         
-        int main(float res, int s)
+        float solve(float a)
         {
-            float a = 0;
             {
-                if(a)
+                if(minus(a) > 4)
                     return 0;
                 else
-                {
-                    
-                }
+                    return minus(plus(1, 9));
             }
         }
         ;
@@ -38,14 +35,14 @@ s2 = '''
             /* comment 1
             c = input();
             */
-            for (int i = 0, j = 8; ((i <= 5)) && g; i = i + 1)
+            for (int i = 0, j = 8; ((i <= 5)) && g; i++)
                 for(; a < b;)
                     if (a > 7 + b) {
                         int c = a + b * (2 - 1) + 0;  // comment 2
                         string ab = "98\tура";
                     }
-                    else if (a > 4)   
-                        ab = ab + "a";         
+                    else if (2 > 4)   
+                        ab += "a";         
                         //output(c + 1, 89.89);
             for(;;);
         }
@@ -54,20 +51,24 @@ s2 = '''
 s3 = '''
         void test2() 
         {
+            int a;
             while (a==0){
-                if (a > b + 1 && x) 
-                    a = 0;
+                if (a > 23 + 1 && 2) 
+                    int a = 0;
                 else 
                     if (8 > 9)
-                         output(a); 
+                         int a; 
                     else {
-                        a=9;}
+                        int a=9;}
                         
-                a = 90;
+                int a = 90;
+                trtet();
             }
-            
+            for(int a = 1;;)
+                int a1=a;
             do{
-            } while (!a != (1 + 9) * b / 8);
+            int a = 0;
+            } while (!a != (1 + 9) * 2 / 8);
             
         }
     '''
@@ -76,10 +77,10 @@ s4 = '''
     void test3()
     {
         int res = 0, s;
-        int[] a = new int[] {1,2,3,4,5};
+        int[] a = new int[5] {1,2,3,4,5};
         float b = 0.3;
-        float[] fl = new float[2] {1.2, b}; 
-        
+        float[] fl = new float[] {1.2, b}; 
+        int[] aw = new int[2*(0+4)+13%5], d;
         for (int i = 1; i < 3; i++) 
             a[i] = a[i-1]*2;
     }
@@ -97,46 +98,24 @@ s5 = '''
     '''
 
 s6 = '''
-    int t()
+    void t()
     {
-        int[] a = new int[5], b = new int[] {1,2+0}, c = new int[1] {1}, d;
-        //a[9] = int(a[1+1]);
-        return a[1];
+        float a = 23 * 2 % 12 + -(10 / 4.0 + 2);
+        bool b = !a && !"" || true && 92+0.0;
     }
     '''
 
 s7 = '''
-    float c = 2.10e2 + -5;
-    int[] ar = new int[2];
-    float a = ar[2] * 1;
-    float[] ad = new float[] { 1, 1+1.0};
-    int func1(float a, string ab) 
-    {
+    int c = 5;
+
+    float func1(float a) {
       float r = 0.7 * a;
       r += r + c;
-      return 1;
+      return r;
     }
-    /*float x = -(81 % (3 + -1)) + 2.0;
-    int z = 0;
-    int r = 1 + func1(7 + 0.2 + z, 12);*/
+    
+    int x = 0; //input();
+    float r = func1(7 + 0.2 + x);
     '''
 
-s8 = '''
-    float func1(int aaaaa, float aaa)
-    {
-        bool aa = -1.1;
-        int[] a = new int[2];
-        bool q = 1;
-        string d = "dsds";
-        a = new int[4] {1,1,1,1};
-        d[1];
-        return 1.3;
-    }
-    void main()
-    {
-        float a = func1(5, 5);
-    }
-
-'''
-
-print_tree(s8)
+print_tree(s6)

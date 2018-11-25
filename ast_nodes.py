@@ -87,9 +87,8 @@ class Context(object):
                 loc_context = loc_context.parent
         return loc_context
 
-    def is_param_added(self, param_name) -> 'IdentNode':
-        a = list(filter(lambda x: x.name == param_name, self.params))
-        return a
+    def is_param_added(self, param_name):
+        return list(filter(lambda x: x.name == param_name, self.params))
 
     def find_function(self, func_name) -> 'FunctionNode':
         loc_context = self
@@ -189,13 +188,12 @@ class IdentNode(ExprNode):
                 self.index = v.index
                 self.var_type = v.var_type
                 self.data_type = v.data_type
-        '''else:
+        else:
             v = context.find_function(self.name)
             if v:
                 self.data_type = v.data_type
             else:
                 logger.error(str(self.row) + ': ' + self.name + ': unknown identifier')
-        '''
 
     def __str__(self) -> str:
         if self.index is not None and self.data_type and self.var_type:
@@ -209,15 +207,15 @@ class CastNode(ExprNode):
     def __init__(self, var: ExprNode, data_type: Type, const=None,
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(row=row, line=line, **props)
-        self.var = var
         self.data_type = data_type
+        self.var = var
         if const is not None:
             if self.data_type.name is BaseTypes.Bool:
                 self.const = bool(const)
             elif self.data_type.name is BaseTypes.String:
                 self.const = str(const)
             else:
-                self.const = const
+                self.const = eval('{0}({1})'.format(self.data_type, self.var.const))
 
     @property
     def childs(self) -> Tuple[ExprNode, Type]:
@@ -257,7 +255,7 @@ class BinOpNode(ExprNode):
     def semantic_check(self, context: Context = None):
         for each in self.childs:
             each.semantic_check(context)
-        if not self.arg1.data_type or not self.arg2.data_type:
+        if not self.arg1.data_type or not self.arg2.data_type or not self.arg1.data_type.name or not self.arg2.data_type.name:
             return
         if self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name is BaseTypes.String:
             if self.op.value not in ('+', '==', '!='):
@@ -265,12 +263,13 @@ class BinOpNode(ExprNode):
                     str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
                         self.arg1.data_type), str(self.arg2.data_type)))
 
-        if self.op.value in ('&&', '||'):
+        elif self.op.value in ('>', '<', '>=', '<=', '==', '!=', '&&', '||'):
             self.data_type = Type('bool')
-            if self.arg1.data_type.name is not BaseTypes.Bool:
-                self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
-            if self.arg2.data_type.name is not BaseTypes.Bool:
-                self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
+            if self.op.value in ('&&', '||'):
+                if self.arg1.data_type.name is not BaseTypes.Bool:
+                    self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
+                if self.arg2.data_type.name is not BaseTypes.Bool:
+                    self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
         elif self.arg1.data_type == self.arg2.data_type:
             self.data_type = self.arg1.data_type
         elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
@@ -280,9 +279,10 @@ class BinOpNode(ExprNode):
             self.data_type = self.arg1.data_type
             self.arg2 = CastNode(self.arg2, self.data_type, self.arg2.const)
         else:
-            logger.error(str(self.row) + ': incompatible types: \'{0}\' and \'{1}\''.format(self.arg1.data_type, self.arg2.data_type))
+            logger.error(str(self.row) + ': incompatible types: \'{0}\' and \'{1}\''.format(self.arg1.data_type,
+                                                                                            self.arg2.data_type))
 
-        if self.arg1.const is not None and self.arg2.const is not None and self.data_type:
+        if self.arg1.const is not None and self.arg2.const is not None:
             if self.op.value == '&&':
                 self.const = bool(self.arg1.const and self.arg2.const)
             elif self.op.value == '||':
@@ -295,7 +295,6 @@ class BinOpNode(ExprNode):
                     str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
             if self.op.value in ('>', '<', '>=', '<=', '==', '!=', '&&', '||'):
                 self.const = bool(self.const)
-                self.data_type = Type('bool')
 
     @property
     def childs(self) -> Tuple[ExprNode, ExprNode]:
@@ -338,7 +337,12 @@ class UnOpNode(ExprNode):
 
     def semantic_check(self, context: Context = None):
         self.arg.semantic_check(context)
-        self.data_type = self.arg.data_type
+
+        if self.op.value == '!':
+            self.data_type = Type('bool', row=self.row)
+            self.arg = CastNode(self.arg, self.data_type, self.arg.const)
+        else:
+            self.data_type = self.arg.data_type
         self.const = self.arg.const
 
         if self.arg.data_type.rang != 0:
@@ -346,12 +350,12 @@ class UnOpNode(ExprNode):
                 str(self.row) + ': \'{0}\' is not allowed for \'{1}\' type'.format(self.op.value, self.arg.data_type))
         if self.const is not None:
             if self.op.value == '!':
-                self.const = not bool(self.const)
-                self.data_type = Type('bool', row=self.row)
+                self.const = not self.const
             elif self.data_type.name in (BaseTypes.Float, BaseTypes.Int):
                 self.const = eval(str(self.data_type) + '(' + self.op.value + str(self.arg.const) + ')')
             else:
-                logger.error(str(self.row) + ': \'{0}\' is not allowed for \'{1}\' type'.format(self.op.value, self.arg.data_type))
+                logger.error(str(self.row) + ': \'{0}\' is not allowed for \'{1}\' type'.format(self.op.value,
+                                                                                                self.arg.data_type))
 
 
 class StmtNode(ExprNode):
@@ -430,8 +434,8 @@ class CallNode(StmtNode):
                             logger.error(str(self.row) + ': ' + str(self.func.name) + ': argument (' + str(i + 1) +
                                          ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
                                          str(v.params[i].data_type) + '\'')
-        else:
-            logger.error(str(self.row) + ': ' + str(self.func.name) + ': unknown identifier')
+       #else:
+        #    logger.error(str(self.row) + ': ' + str(self.func.name) + ': unknown identifier')
 
 
 class FunctionNode(StmtNode):
@@ -444,7 +448,8 @@ class FunctionNode(StmtNode):
         self.body = body if body else (_empty,)
 
     def check_params(self, params):
-        return tuple(IdentNode(param.childs[1], Type(str(param.vars_type), row=self.row)) for param in params if param.vars_type.name)
+        return tuple(IdentNode(param.childs[1], Type(str(param.vars_type), row=self.row)) for param in params if
+                     param.vars_type.name)
 
     @property
     def childs(self) -> Tuple[AstNode]:
@@ -571,7 +576,6 @@ class ArrayIdentNode(ExprNode):
 
     @property
     def childs(self) -> Tuple[AstNode]:
-        a = (*self.elements,)
         return (*self.elements,) if self.elements else (_empty,)
 
     def __str__(self) -> str:

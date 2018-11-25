@@ -128,7 +128,7 @@ def p_statement(t):
                  | block
                  | selection_statement
                  | iteration_statement
-                 | jump_statement'''
+                 | jump_statement semicolons'''
     t[0] = t[1]
 
 
@@ -157,7 +157,8 @@ def p_jump_statement(t):
 
 def p_return(t):
     '''return : RETURN
-              | RETURN logical_expression'''
+              | RETURN logical_expression
+              | RETURN assignment'''
     if len(t) > 2:
         t[0] = ReturnNode(t[2], row=t.lexer.lineno)
     else:
@@ -302,8 +303,8 @@ def p_group(t):
 
 
 def p_if(t):
-    '''if : IF LPAREN logical_expression RPAREN statement_list
-          | IF LPAREN logical_expression RPAREN statement_list ELSE statement_list'''
+    '''if : IF LPAREN logical_expression RPAREN statement
+          | IF LPAREN logical_expression RPAREN statement ELSE statement'''
 
     if len(t) > 6:
         t[0] = IfNode(t[3], t[5], t[7], row=t.lexer.lineno)
