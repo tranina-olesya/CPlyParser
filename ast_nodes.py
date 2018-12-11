@@ -52,7 +52,7 @@ class VarType(Enum):
 class Context(object):
     def __init__(self, parent: 'Context' = None):
         self.vars = []
-        self.functions = [FunctionNode(Type('int'), 'input')]
+        self.functions = []
         self.parent = parent
         self.params = []
 
@@ -90,7 +90,36 @@ class Context(object):
     def is_param_added(self, param_name):
         return list(filter(lambda x: x.name == param_name, self.params))
 
-    def find_function(self, func_name) -> 'FunctionNode':
+    def find_function(self, func_name, func_params) -> 'FunctionNode':
+        loc_context = self
+        while loc_context.parent:
+            loc_context = loc_context.parent
+        func = None
+        b = False
+        for function in loc_context.functions:
+            if function.name == func_name and len(function.params) == len(func_params):
+                if all(func_params[i].data_type == function.params[i].data_type for i in range(len(function.params))):
+                    return function
+                if all(func_params[i].data_type.is_castable_to(function.params[i].data_type) for i in range(len(function.params))):
+                    if func is None:
+                        func = function
+                    else:
+                        b = True
+        if b:
+            raise Exception
+        return func
+
+    def check_if_was_declared(self, func_name, func_params) -> bool:
+        loc_context = self
+        while loc_context.parent:
+            loc_context = loc_context.parent
+        for function in loc_context.functions:
+            if function.name == func_name and len(function.params) == len(func_params):
+                if all(func_params[i].data_type == function.params[i].data_type for i in range(len(function.params))):
+                    return True
+        return False
+
+    def find_function_by_name(self, func_name) -> 'FunctionNode':
         loc_context = self
         while loc_context.parent:
             loc_context = loc_context.parent
@@ -189,11 +218,11 @@ class IdentNode(ExprNode):
                 self.var_type = v.var_type
                 self.data_type = v.data_type
         else:
-            v = context.find_function(self.name)
+            '''v = context.find_function_by_name(self.name)
             if v:
                 self.data_type = v.data_type
-            else:
-                logger.error(str(self.row) + ': ' + self.name + ': unknown identifier')
+            else:'''
+            logger.error(str(self.row) + ': ' + self.name + ': unknown identifier')
 
     def __str__(self) -> str:
         if self.index is not None and self.data_type and self.var_type:
@@ -292,8 +321,11 @@ class BinOpNode(ExprNode):
                 self.const = eval(
                     '\"' + str(self.arg1.const) + '\"' + self.op.value + '\"' + str(self.arg2.const) + '\"')
             else:
-                self.const = eval(
-                    str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
+                if self.op.value in ('/', '%') and int(self.arg2.const) == 0:
+                    logger.error(str(self.row) + ': division by zero')
+                else:
+                    self.const = eval(
+                        str(self.data_type) + '(' + str(self.arg1.const) + self.op.value + str(self.arg2.const) + ')')
             if self.op.value in ('>', '<', '>=', '<=', '==', '!=', '&&', '||'):
                 self.const = bool(self.const)
 
@@ -416,28 +448,33 @@ class CallNode(StmtNode):
         return 'call'
 
     def semantic_check(self, context: Context = None):
-        for each in self.childs:
+        for each in self.params:
             each.semantic_check(context)
 
-        v: FunctionNode = context.find_function(self.func.name)
-        if v:
-            self.data_type = v.data_type
-            if len(self.params) < len(v.params):
-                logger.error(str(self.row) + ': ' + str(self.func.name) + ': not enough arguments in the function call')
-            elif len(self.params) > len(v.params):
-                logger.error(str(self.row) + ': ' + str(self.func.name) + ': too many arguments in the function call')
+        try:
+            v: FunctionNode = context.find_function(self.func.name, self.params)
+            if v:
+                self.data_type = v.data_type
+                if len(self.params) < len(v.params):
+                    logger.error(str(self.row) + ': ' + str(self.func.name) + ': not enough arguments in the function call')
+                elif len(self.params) > len(v.params):
+                    logger.error(str(self.row) + ': ' + str(self.func.name) + ': too many arguments in the function call')
+                else:
+                    for i, p in enumerate(self.params):
+                        if str(v.params[i].data_type) != str(p.data_type):
+                            if p.data_type.is_castable_to(v.params[i].data_type):
+                                self.params[i] = CastNode(self.params[i], v.params[i].data_type, self.params[i].const)
+                            else:
+                                logger.error(str(self.row) + ': ' + str(self.func.name) + ': argument (' + str(i + 1) +
+                                             ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
+                                             str(v.params[i].data_type) + '\'')
             else:
-                for i, p in enumerate(self.params):
-                    if str(v.params[i].data_type) != str(p.data_type):
-                        if p.data_type.is_castable_to(v.params[i].data_type):
-                            self.params[i] = CastNode(self.params[i], v.params[i].data_type, self.params[i].const)
-                        else:
-                            logger.error(str(self.row) + ': ' + str(self.func.name) + ': argument (' + str(i + 1) +
-                                         ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
-                                         str(v.params[i].data_type) + '\'')
-       #else:
-        #    logger.error(str(self.row) + ': ' + str(self.func.name) + ': unknown identifier')
-
+               logger.error(str(self.row) + ': ' + str(self.func.name) + ': unknown identifier')
+        except Exception:
+            str_params = ''
+            for param in self.params:
+                str_params += (', ' if str_params else '') + str(param.data_type)
+            logger.error(str(self.row) + ': there is more than one function named \'{0}\' that match ({1})'.format(self.func.name, str_params))
 
 class FunctionNode(StmtNode):
     def __init__(self, data_type: Type, name: str, params: Tuple = None, *body: Tuple[StmtNode],
@@ -474,6 +511,12 @@ class FunctionNode(StmtNode):
             return '{0} {1} ({2})'.format(self.data_type, self.name, params)
 
     def semantic_check(self, context: Context = None):
+        if context.check_if_was_declared(self.name, self.params):
+            str_params =''
+            for param in self.params:
+                str_params += (', ' if str_params else '') + str(param.data_type)
+            logger.error(str(self.row) + ': function \'{0}\'({1}) was already declared'.format(self.name, str_params))
+            return
         context.add_function(self)
         context = Context(context)
         for el in self.params:

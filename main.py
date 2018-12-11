@@ -13,7 +13,7 @@ s1 = '''
             return a - 1;
         }
         
-        float solve(float a)
+        float solve(int a)
         {
             {
                 if(minus(a) > 4)
@@ -62,7 +62,7 @@ s3 = '''
                         int a=9;}
                         
                 int a = 90;
-                trtet();
+                //trtet();
             }
             for(int a = 1;;)
                 int a1=a;
@@ -109,14 +109,25 @@ s6 = '''
 s7 = '''
     int c = 5;
 
-    float func1(float a) {
+    float func1(float a, int aa) {
       float r = 0.7 * a;
       r += r + c;
       return r;
     }
-    
-    int x = 0; //input();
-    float r = func1(7 + 0.2 + x);
+    float func1(float a, float aa) { return 1; }
+    float func1(int a, int ada) { return 1; }
+    float func1() { return 1;}
+    int x = 0;
+    float r = func1(7 + 2 + x, 1);
+    float s = func1();
     '''
 
-print_tree(s6)
+s8= '''
+// что-то с этим надо делать
+void main()
+{
+    string a = "aaa";
+    a[1];
+}
+'''
+print_tree(s7)
