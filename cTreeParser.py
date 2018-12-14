@@ -542,3 +542,4 @@ def print_tree(s):
     p.semantic_check()
     if not logger.error.counter:
         print(*p.tree, sep=os.linesep)
+        print(p.code_generate())

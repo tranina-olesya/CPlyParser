@@ -8,12 +8,12 @@ s1 = '''
             int res = a + b;
             return res;
         }
-        float minus(float a)
+        double minus(double a)
         {
             return a - 1;
         }
         
-        float solve(int a)
+        double solve(int a)
         {
             {
                 if(minus(a) > 4)
@@ -28,7 +28,7 @@ s1 = '''
 
 s2 = '''
         int a, b;
-        void test1() 
+        void test1(int w) 
         {
             int g, g2 = g;
     
@@ -78,8 +78,8 @@ s4 = '''
     {
         int res = 0, s;
         int[] a = new int[5] {1,2,3,4,5};
-        float b = 0.3;
-        float[] fl = new float[] {1.2, b}; 
+        double b = 0.3;
+        double[] fl = new double[] {1.2, b}; 
         int[] aw = new int[2*(0+4)+13%5], d;
         for (int i = 1; i < 3; i++) 
             a[i] = a[i-1]*2;
@@ -100,7 +100,7 @@ s5 = '''
 s6 = '''
     void t()
     {
-        float a = 23 * 2 % 12 + -(10 / 4.0 + 2);
+        double a = 23 * 2 % 12 + -(10 / 4.0 + 2);
         bool b = !a && !"" || true && 92 != 0.0;
         bool c = 2 == 1.0;
     }
@@ -109,25 +109,45 @@ s6 = '''
 s7 = '''
     int c = 5;
 
-    float func1(float a, int aa) {
-      float r = 0.7 * a;
+    double func1(double a, int aa) {
+      double r = 0.7 * a;
       r += r + c;
       return r;
     }
-    float func1(float a, float aa) { return 1; }
-    float func1(int a, int ada) { return 1; }
-    float func1() { return 1;}
+    double func1(double a, double aa) { return 1; }
+    double func1(int a, int ada) { return 1; }
+    double func1() { return 1;}
     int x = 0;
-    float r = func1(7 + 2 + x, 1);
-    float s = func1();
+    double r = func1(7 + 2 + x, 1);
+    double s = func1();
     '''
 
 s8= '''
-// что-то с этим надо делать
-void main()
-{
-    string a = "aaa";
-    a[1];
-}
+    // что-то с этим надо делать
+    void main()
+    {
+        string a = "aaa";
+        a[1];
+    }
 '''
-print_tree(s7)
+
+test = '''
+    void main(int b)
+    {
+        double a = 0.5;
+        if (a>b*a+1)
+        {
+            a +=0;
+            a = 8;
+        }else
+        {
+            a = 9;
+            a++;
+        }
+        {
+            int a =0;
+        }
+    }
+
+'''
+print_tree(test)
