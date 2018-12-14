@@ -132,22 +132,23 @@ s8= '''
 '''
 
 test = '''
-    void main(int b)
+    void main()
     {
-        double a = 0.5;
-        if (a>b*a+1)
-        {
-            a +=0;
-            a = 8;
-        }else
-        {
-            a = 9;
-            a++;
-        }
-        {
-            int a =0;
-        }
+        int n = input_int();
+        int s = 1;
+        for (int i = 2; i <= n; i++)
+            s *= i;
+        output_ints(s);
     }
 
 '''
-print_tree(test)
+
+test2 = '''
+    void main()
+    {
+        int n = 6;
+        int a = 1;
+        int c = a = n = 9;
+    }
+'''
+print_tree(test2)

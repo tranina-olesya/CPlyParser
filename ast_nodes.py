@@ -58,7 +58,10 @@ class VarType(Enum):
 class Context(object):
     def __init__(self, parent: 'Context' = None):
         self.vars = []
-        self.functions = []
+        self.functions = [FunctionNode(Type('void'), 'output_int', (VarsDeclNode(Type('int'), (IdentNode('a'), )),)),
+                          FunctionNode(Type('void'), 'output_double', (VarsDeclNode(Type('double'), (IdentNode('a'), )),)),
+                          FunctionNode(Type('int'), 'input_int'),
+                          FunctionNode(Type('double'), 'input_double')]
         self.parent = parent
         self.params = []
 
@@ -164,12 +167,12 @@ LLVMIntOps = {
     '-': 'sub',
     '*': 'mul',
     '%': 'srem',
-    '>': 'fcmp ogt',
-    '<': 'fcmp olt',
-    '==': 'fcmp oeq',
-    '>=': 'fcmp oge',
-    '<=': 'fcmp ole',
-    '!=': 'fcmp one',
+    '>': 'icmp sgt',
+    '<': 'icmp slt',
+    '==': 'icmp eq',
+    '>=': 'icmp sge',
+    '<=': 'icmp sle',
+    '!=': 'icmp ne',
 }
 
 LLVMFloatOps = {
@@ -577,6 +580,22 @@ class CallNode(StmtNode):
                 str_params += (', ' if str_params else '') + str(param.data_type)
             logger.error(str(self.row) + ': there is more than one function named \'{0}\' that match ({1})'.format(self.func.name, str_params))
 
+    def code_generate(self, func=None):
+        code = ''
+        params_code = ''
+        global var_number
+        for arg in self.params[::-1]:
+            code += arg.code_generate(func)
+            t = '%' + str(var_number) if arg.const is None else arg.const
+            params_code = '{0} {1}'.format(LLVMTypes[arg.data_type.name.value][0], t ) + (', ' if params_code else '') + params_code
+        if self.data_type.name is not BaseTypes.Void:
+            var_number += 1
+            code += '  %{0} = call {1} @{2}({3})\n'.format(var_number, LLVMTypes[self.data_type.name.value][0], self.func.name, params_code)
+        else:
+            code += '  call {0} @{1}({2})\n'.format(LLVMTypes[self.data_type.name.value][0], self.func.name, params_code)
+
+        return code
+
 
 class FunctionNode(StmtNode):
     def __init__(self, data_type: Type, name: str, params: Tuple = None, *body: Tuple[StmtNode],
@@ -707,13 +726,14 @@ class AssignNode(StmtNode):
     def code_generate(self, func=None) -> str:
         code = ''
         global var_number
-        if self.val.const is None:
+        if self.const is None:
             code += self.val.code_generate(func)
             n = var_number
             #var_number += 1
             code += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0], n, func.find_var(self.var.name).index, LLVMTypes[self.data_type.name.value][1])
         else:
-            code = '  store {0} {1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0], self.val.const, func.find_var(self.var.name).index, LLVMTypes[self.data_type.name.value][1])
+            code += self.val.code_generate(func)
+            code += '  store {0} {1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0], self.val.const, func.find_var(self.var.name).index, LLVMTypes[self.data_type.name.value][1])
         return code
 
     def __str__(self) -> str:
@@ -895,11 +915,13 @@ class IfNode(StmtNode):
         then_stmt = '; <label>:{0}:\n'.format(l2) + self.then_stmt.code_generate(func)
         var_number += 1
         l3 = var_number
-        else_stmt = '; <label>:{0}:\n'.format(l3) + self.else_stmt.code_generate(func)
-        var_number += 1
+        else_stmt = ''
+        if self.else_stmt:
+            else_stmt = '; <label>:{0}:\n'.format(l3) + self.else_stmt.code_generate(func)
+            var_number += 1
         l4 = var_number
         br_l = '  br label %{0}\n\n'.format(l4)
-        code = cond + '  br i1 %{0}, label %{1}, label %{2}\n\n'.format(l1, l2, l3) + then_stmt + br_l + else_stmt + br_l + '; <label>:{0}:\n'.format(l4)
+        code = cond + '  br i1 %{0}, label %{1}, label %{2}\n\n'.format(l1, l2, l3) + then_stmt + br_l + else_stmt + (br_l if self.else_stmt else '') + '; <label>:{0}:\n'.format(l4)
         return code
 
 
@@ -924,6 +946,33 @@ class ForNode(StmtNode):
         context = Context(context)
         for each in self.childs:
             each.semantic_check(context)
+
+    def code_generate(self, func=None) -> str:
+        global var_number
+
+        init = self.init.code_generate(func)
+        var_number += 1
+        l1 = var_number
+        init += '  br label %{0}\n\n'.format(l1)
+
+        cond = '; <label>:{0}:\n'.format(l1) + self.cond.code_generate(func)
+        var_number += 1
+        l2 = var_number
+
+        body = '; <label>:{0}:\n'.format(l2) + self.body.code_generate(func)
+        var_number += 1
+        l3 = var_number
+        body += '  br label %{0}\n\n'.format(l3)
+
+        step = '; <label>:{0}:\n'.format(l3) + self.step.code_generate(func)
+        var_number += 1
+        l4 = var_number
+        step += '  br label %{0}\n\n'.format(l1)
+
+        #br_l = '  br label %{0}\n\n'.format(l4)
+        cond += '  br i1 %{0}, label %{1}, label %{2}\n\n'.format(l2-1, l2, l4)
+        code = init + cond + body + step + '; <label>:{0}:\n'.format(l4)
+        return code
 
 
 class WhileNode(StmtNode):
