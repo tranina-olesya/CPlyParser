@@ -143,16 +143,13 @@ test = '''
 '''
 
 test2 = '''
+    int a, b = 2;
     void main()
     {
         int n = input_int();	
-        int a = input_int(), i = 1, s = 1;
-        while(i < n && n == 12)
-        {
-             s *= a;
-             i++;
-        }
+        int a = input_int(), i = b, s = 1;
         output_int(s);
     }
+    double c;
 '''
 print_tree(test2)
