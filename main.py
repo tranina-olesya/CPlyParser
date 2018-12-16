@@ -132,23 +132,27 @@ s8= '''
 '''
 
 test = '''
-    void main()
+    int factorial(int n)
     {
-        int n = input_int();
         int s = 1;
         for (int i = 2; i <= n; i++)
             s *= i;
-        output_ints(s);
+        return s;
     }
-
+    void main(){}
 '''
 
 test2 = '''
     void main()
     {
-        int n = 6;
-        int a = 1;
-        int c = a = n = 9;
+        int n = input_int();	
+        int a = input_int(), i = 1, s = 1;
+        while(i < n && n == 12)
+        {
+             s *= a;
+             i++;
+        }
+        output_int(s);
     }
 '''
 print_tree(test2)
