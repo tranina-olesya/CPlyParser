@@ -2,6 +2,7 @@ import ply.lex as lex
 from ast_nodes import *
 import ply.yacc as yacc
 import os
+from shutil import copyfile
 
 tokens = [
     'NUMBER', 'IDENT', 'STRING', 'CHAR',
@@ -141,7 +142,7 @@ def p_simple_statement(t):
 
 def p_block(t):
     'block : LBRACE statement_list RBRACE'
-    t[0] = t[2]
+    t[0] = BlockNode(*t[2].childs)
 
 
 def p_selection_statement(t):
@@ -356,7 +357,7 @@ def p_simple_rvalue(t):
 
 def p_string(t):
     '''string : STRING'''
-    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
+    t[0] = ArrayIdentNode(Type('char', rang=1, row=t.lexer.lineno), None, *t[1], row=t.lexer.lineno)
 
 
 def p_char(t):
@@ -513,7 +514,7 @@ def p_for_condition(t):
 
 def p_dowhile(t):
     '''dowhile : DO statement WHILE LPAREN logical_expression RPAREN semicolons'''
-    t[0] = DoWhileNode(t[2], t[5], row=t.lexer.lineno)
+    t[0] = DoWhileNode(StatementListNode(*t[2].childs), t[5], row=t.lexer.lineno)
 
 
 def p_while(t):
@@ -544,10 +545,24 @@ def p_error(t):
 parser = yacc.yacc()
 
 
-def print_tree(s):
+def build_tree(s):
     p = parser.parse(s)
     #print(*p.tree, sep=os.linesep)
+
     p.semantic_check()
+
     if not logger.error.counter:
         print(*p.tree, sep=os.linesep)
-       # print(p.code_generate())
+        print(p.code_generate())
+
+
+def code_generate(file_name):
+    with open(file_name, 'r') as file:
+        s = file.read()
+    p = parser.parse(s)
+    p.semantic_check()
+    w_file_name = file_name[:file_name.index('.')] + '.ll'
+    copyfile('hello.ll', w_file_name)
+    with open(w_file_name, 'a') as file:
+        if not logger.error.counter:
+            file.write(p.code_generate())

@@ -41,9 +41,6 @@ s2 = '''
                         int c = a + b * (2 - 1) + 0;  // comment 2
                         string ab = "98\tура";
                     }
-                    else if (2 > 4)   
-                        ab += "a";         
-                        //output(c + 1, 89.89);
             for(;;);
         }
     '''
@@ -52,6 +49,10 @@ s3 = '''
         void test2() 
         {
             int a;
+            
+            {
+                int a;
+            }   
             while (a==0){
                 if (a > 23 + 1 && 2) 
                     int a = 0;
@@ -63,7 +64,7 @@ s3 = '''
                         
                 int a = 90;
             }
-            for(int a = 1;;)
+            for(int a = 1, f =2;;)
                 int a1=a;
             do{
             int a = 0;
@@ -101,7 +102,7 @@ s6 = '''
     void t()
     {
         double a = 23 * 2 % 12 + -(10 / 4.0 + 2);
-        bool b = !a && !"" || true && 92 != 0.0;
+        bool b = !a && a || true && 92 != 0.0;
         bool c = 2 == 1.0;
     }
     '''
@@ -127,25 +128,43 @@ s8= '''
     //int a, b = 0;
     void main()
     {
-        string a = "aaa";
-        char as = -'a';
-    }
+        string a = "hello";
+        int aaa = 1+1;
+        for (int i = 0; i<sizeof(a); i++)
+        {
+            output_char(a[i]);
+        }
+    }   
 '''
 
 test = '''
-    //int[] a = new int[]{1,1,1};
+int a = 0;
+int[] b = new int[] {0, 9};
+    void main()
+    {
+        int a = input_int(), b = input_int();
+        bool ab = !a && a>b || b-a;
+        if (ab)
+            output_int(5);
+        if ( !(a==b) && a>b && 1 &&a)
+           output_int(2);
+        /*else
+           output_int(3);
+        if (a>b || !a || 0 || b)
+           output_int(4);*/
+	}
     
 '''
 
 test2 = '''
-int factorial(int n)
+/*int factorial(int n)
     {
         int s = 1;
         for (int i = 2; i <= n; i++)
             s *= i;
         return s;
     }
-    
+    */
     int f(int n) 
     {
       if (n == 1 || n == 2)
@@ -162,7 +181,7 @@ int factorial(int n)
         output_int(f(i));
       return 0;
     }
-    
+    /*
     void sort(){
         int[] arr = new int[2];
         int size = 5;
@@ -182,7 +201,51 @@ int factorial(int n)
         }
         for (int i = 0; i < 5; i++) 
             output_int(arr[i]);
-    }
+    }*/
 
 '''
-print_tree(s8)
+test3 = '''
+    /*int factorial(int n)
+    {
+        int s = 1;
+        for (int i = 2; i <= n; i++)
+            s *= i;
+        return s;
+    }
+    int f(int n) 
+    {
+      if (n == 1 || n == 2)
+        {return 1;
+        int a =0;
+        output_int(a);
+         }
+      return f(n - 1) + f(n - 2);
+    }
+    int main()
+    {
+      int n = input_int();
+      for (int i = 1; i <= n; i++)
+        output_int(f(i));
+      return 0;
+    }
+'''
+
+test4 = '''
+    int[] a = new int[5];
+    void sort()
+    {
+        for(int i=0;i<sizeof(a);i++)
+            a[i] = 1;
+    }
+    void main()
+    {
+        for(int i=0;i<sizeof(a);i++)
+            a[i] = input_int();
+        sort();
+        for(int i=0;i<sizeof(a);i++)
+            output_int(a[i]);
+    }
+    
+'''
+build_tree(test4)
+code_generate('test.c')
