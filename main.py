@@ -15,15 +15,15 @@ s1 = '''
         
         double solve(int a)
         {
-            {
-                if(minus(a) > 4)
-                    return 0;
-                else
-                    return minus(plus(1, 9));
-            }
+            if(minus(a) > 4)
+                return 0;
+            else
+                return minus(plus(a, 9));
         }
-        ;
-        void pass() { }
+        
+        void main() { 
+            output_double(solve(input_int()));
+        }
     '''
 
 s2 = '''
@@ -62,7 +62,6 @@ s3 = '''
                         int a=9;}
                         
                 int a = 90;
-                //trtet();
             }
             for(int a = 1;;)
                 int a1=a;
@@ -76,11 +75,12 @@ s3 = '''
 s4 = '''
     void test3()
     {
-        int res = 0, s;
+    int s;
         int[] a = new int[5] {1,2,3,4,5};
-        double b = 0.3;
-        double[] fl = new double[] {1.2, b}; 
-        int[] aw = new int[2*(0+4)+13%5], d;
+        /*double b = 0.3;
+        double[] fl = new double[] {1, b};*/ 
+        a = new int[2]; 
+        a[0];
         for (int i = 1; i < 3; i++) 
             a[i] = a[i-1]*2;
     }
@@ -92,7 +92,7 @@ s5 = '''
         int a = 0, b = 1, c = 2, d = 3;
         a = b = c = d = -1;
         a = -(b + 2);
-        a++;
+        c++;
         
     }
     '''
@@ -124,32 +124,65 @@ s7 = '''
 
 s8= '''
     // что-то с этим надо делать
+    //int a, b = 0;
     void main()
     {
         string a = "aaa";
-        a[1];
+        char as = -'a';
     }
 '''
 
 test = '''
-    int factorial(int n)
+    //int[] a = new int[]{1,1,1};
+    
+'''
+
+test2 = '''
+int factorial(int n)
     {
         int s = 1;
         for (int i = 2; i <= n; i++)
             s *= i;
         return s;
     }
-    void main(){}
-'''
-
-test2 = '''
-    int a, b = 2;
-    void main()
+    
+    int f(int n) 
     {
-        int n = input_int();	
-        int a = input_int(), i = b, s = 1;
-        output_int(s);
+      if (n == 1 || n == 2)
+        {return 1;
+        int a =0;
+        output_int(a);
+         }
+      return f(n - 1) + f(n - 2);
     }
-    double c;
+    int main()
+    {
+      int n = input_int();
+      for (int i = 1; i <= n; i++)
+        output_int(f(i));
+      return 0;
+    }
+    
+    void sort(){
+        int[] arr = new int[2];
+        int size = 5;
+        arr = new int[5];
+        
+        for (int i = 0; i < size; i++) 
+            arr[i]=input_int();
+            
+        for (int i = 0; i < size - 1; i++) {
+            for (int j = 0; j < size - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+        for (int i = 0; i < 5; i++) 
+            output_int(arr[i]);
+    }
+
 '''
-print_tree(test2)
+print_tree(s8)

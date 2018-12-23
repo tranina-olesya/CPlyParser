@@ -4,7 +4,7 @@ import ply.yacc as yacc
 import os
 
 tokens = [
-    'NUMBER', 'IDENT', 'STRING',
+    'NUMBER', 'IDENT', 'STRING', 'CHAR',
     'ADD', 'SUB', 'MUL', 'DIV', 'MOD',
     'INC_OP', 'DEC_OP',
     'ASSIGN', 'ADD_ASSIGN', 'SUB_ASSIGN', 'MUL_ASSIGN', 'DIV_ASSIGN', 'MOD_ASSIGN',
@@ -65,7 +65,8 @@ t_NOT = r'!'
 t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
 t_BRACKETS = r'\[\s*\]'
 t_ignore = ' \r\t'
-t_STRING = '\"[^"]*\"'
+t_STRING = r'".*?"'
+t_CHAR = r'\'.\''
 
 def t_IDENT(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -294,6 +295,7 @@ def p_group(t):
              | LPAREN logical_expression RPAREN
              | number
              | string
+             | char
              | bool_value'''
 
     if len(t) > 2:
@@ -354,6 +356,11 @@ def p_simple_rvalue(t):
 
 def p_string(t):
     '''string : STRING'''
+    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
+
+
+def p_char(t):
+    '''char : CHAR'''
     t[0] = LiteralNode(t[1], row=t.lexer.lineno)
 
 
@@ -539,7 +546,8 @@ parser = yacc.yacc()
 
 def print_tree(s):
     p = parser.parse(s)
+    #print(*p.tree, sep=os.linesep)
     p.semantic_check()
     if not logger.error.counter:
         print(*p.tree, sep=os.linesep)
-        print(p.code_generate())
+       # print(p.code_generate())
