@@ -13,4 +13,7 @@ class CallCounted:
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+logger.addHandler(ch)
 logger.error = CallCounted(logger.error)

@@ -2,7 +2,6 @@ import ply.lex as lex
 from ast_nodes import *
 import ply.yacc as yacc
 import os
-from shutil import copyfile
 
 tokens = [
     'NUMBER', 'IDENT', 'STRING', 'CHAR',
@@ -66,8 +65,8 @@ t_NOT = r'!'
 t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
 t_BRACKETS = r'\[\s*\]'
 t_ignore = ' \r\t'
-t_STRING = r'".*?"'
-t_CHAR = r'\'.\''
+t_STRING = r'"(.|\n)*?"'
+t_CHAR = r"'(.|\n)'"
 
 def t_IDENT(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -77,7 +76,7 @@ def t_IDENT(t):
 
 
 def t_ccode_comment(t):
-    r'(/\*(.|\n)*?\*/)|(//.*)'
+    r'(/\*(.|\n)*?\*/)|//((.*((\'|\").*\n.*(\'|\")).*)*)(.*)'
     t.lexer.lineno += t.value.count("\n")
 
 
@@ -502,6 +501,8 @@ def p_get_element(t):
 
 def p_for(t):
     '''for : FOR LPAREN expression_list SEMICOLON for_condition SEMICOLON expression_list RPAREN statement'''
+    if type(t[9]) is BlockNode:
+        t[9] = StatementListNode(*t[9].childs)
     t[0] = ForNode(t[3], t[5], t[7], t[9], row=t.lexer.lineno)
 
 
@@ -514,7 +515,9 @@ def p_for_condition(t):
 
 def p_dowhile(t):
     '''dowhile : DO statement WHILE LPAREN logical_expression RPAREN semicolons'''
-    t[0] = DoWhileNode(StatementListNode(*t[2].childs), t[5], row=t.lexer.lineno)
+    if type(t[2]) is BlockNode:
+        t[2] = StatementListNode(*t[2].childs)
+    t[0] = DoWhileNode(t[2], t[5], row=t.lexer.lineno)
 
 
 def p_while(t):
@@ -547,7 +550,7 @@ parser = yacc.yacc()
 
 def build_tree(s):
     p = parser.parse(s)
-    #print(*p.tree, sep=os.linesep)
+    print(*p.tree, sep=os.linesep)
 
     p.semantic_check()
 
@@ -557,12 +560,12 @@ def build_tree(s):
 
 
 def code_generate(file_name):
-    with open(file_name, 'r') as file:
-        s = file.read()
+    with open(file_name, 'r', encoding='cp866') as file:
+        s = file.read().replace(r'\n', '\n').replace(r'\r', '\r').replace(r'\t', '\t')
     p = parser.parse(s)
     p.semantic_check()
-    w_file_name = file_name[:file_name.index('.')] + '.ll'
-    copyfile('hello.ll', w_file_name)
-    with open(w_file_name, 'a') as file:
+    w_file_name = file_name + '.ll'
+    #copyfile('D:\GitHub\CPlyParser\hello.ll', w_file_name)
+    with open(w_file_name, 'w') as file:
         if not logger.error.counter:
             file.write(p.code_generate())
