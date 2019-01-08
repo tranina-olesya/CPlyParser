@@ -38,7 +38,7 @@ t_DIV = r'/'
 t_MOD = r'%'
 t_ASSIGN = r'='
 t_ADD_ASSIGN = r'\+='
-t_SUB_ASSIGN= r'-='
+t_SUB_ASSIGN = r'-='
 t_MUL_ASSIGN = r'\*='
 t_DIV_ASSIGN = r'/='
 t_MOD_ASSIGN = r'%='
@@ -66,7 +66,8 @@ t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
 t_BRACKETS = r'\[\s*\]'
 t_ignore = ' \r\t'
 t_STRING = r'"(.|\n)*?"'
-t_CHAR = r"'(.|\n)'"
+t_CHAR = r"'(.|\\n)'"
+
 
 def t_IDENT(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -76,7 +77,7 @@ def t_IDENT(t):
 
 
 def t_ccode_comment(t):
-    r'(/\*(.|\n)*?\*/)|//((.*((\'|\").*\n.*(\'|\")).*)*)(.*)'
+    r'(/\*(.|\n)*?\*/)|//.*'
     t.lexer.lineno += t.value.count("\n")
 
 
@@ -285,9 +286,11 @@ def p_postfix_expression(t):
                           | lvalue INC_OP
                           | lvalue DEC_OP'''
     if len(t) > 2:
-        t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], LiteralNode(str(1)), row=t.lexer.lineno), row=t.lexer.lineno)
+        t[0] = AssignNode(t[1], BinOpNode(BinOp(t[2][0]), t[1], LiteralNode(str(1)), row=t.lexer.lineno),
+                          row=t.lexer.lineno)
     else:
         t[0] = t[1]
+
 
 def p_group(t):
     '''group : call
@@ -356,12 +359,13 @@ def p_simple_rvalue(t):
 
 def p_string(t):
     '''string : STRING'''
-    t[0] = ArrayIdentNode(Type('char', rang=1, row=t.lexer.lineno), None, *t[1], row=t.lexer.lineno)
+    t[0] = ArrayIdentNode(Type('char', rang=1, row=t.lexer.lineno), None,
+                          *t[1].replace(r'\n', '\n').replace(r'\r', '\r').replace(r'\t', '\t'), row=t.lexer.lineno)
 
 
 def p_char(t):
     '''char : CHAR'''
-    t[0] = LiteralNode(t[1], row=t.lexer.lineno)
+    t[0] = LiteralNode(t[1].replace(r'\n', '\n').replace(r'\r', '\r').replace(r'\t', '\t'), row=t.lexer.lineno)
 
 
 def p_call(t):
@@ -403,6 +407,7 @@ def p_args_list(t):
         t[0] = StatementListNode(t[1], row=t.lexer.lineno)
     else:
         t[0] = StatementListNode(row=t.lexer.lineno)
+
 
 def p_vars_declaration(t):
     '''vars_declaration : type init_declarator_list
@@ -561,11 +566,10 @@ def build_tree(s):
 
 def code_generate(file_name):
     with open(file_name, 'r', encoding='cp866') as file:
-        s = file.read().replace(r'\n', '\n').replace(r'\r', '\r').replace(r'\t', '\t')
+        s = file.read()
     p = parser.parse(s)
     p.semantic_check()
     w_file_name = file_name + '.ll'
-    #copyfile('D:\GitHub\CPlyParser\hello.ll', w_file_name)
     with open(w_file_name, 'w') as file:
         if not logger.error.counter:
             file.write(p.code_generate())

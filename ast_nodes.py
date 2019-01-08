@@ -3,6 +3,7 @@ from typing import Callable, Tuple, Optional, Union
 import copy
 from enum import Enum
 from logger import *
+import copy
 
 
 class AstNode(ABC):
@@ -78,7 +79,9 @@ class Context(object):
             while loc_context.parent.parent:
                 loc_context = loc_context.parent
 
-        if not any((x.all_elements_hex() == val.all_elements_hex() if x.data_type.name is BaseTypes.Char else 0) for x in loc_context.arrays.values()):
+        if not any(
+                (x.all_elements_hex() == val.all_elements_hex() if x.data_type.name is BaseTypes.Char else 0) for x in
+                loc_context.arrays.values()):
             loc_context.arrays[name] = val
 
     def add_param(self, var: 'IdentNode'):
@@ -107,23 +110,18 @@ class Context(object):
     def is_param_added(self, param_name):
         return list(filter(lambda x: x.name == param_name, self.params))
 
-    def find_function(self, func_name, func_params) -> 'FunctionNode':
+    def find_functions(self, func_name, func_params):
         loc_context = self
         while loc_context.parent:
             loc_context = loc_context.parent
-        func = None
-        b = False
+        func = []
         for function in loc_context.functions:
             if function.name == func_name and len(function.params) == len(func_params):
                 if all(func_params[i].data_type == function.params[i].data_type for i in range(len(function.params))):
-                    return function
-                if all(func_params[i].data_type.is_castable_to(function.params[i].data_type) for i in range(len(function.params))):
-                    if func is None:
-                        func = function
-                    else:
-                        b = True
-        if b:
-            raise Exception
+                    return function,
+                elif all(func_params[i].data_type.is_castable_to(function.params[i].data_type) for i in
+                         range(len(function.params))):
+                    func.append(function)
         return func
 
     def check_if_was_declared(self, func_name, func_params) -> bool:
@@ -136,19 +134,12 @@ class Context(object):
                     return True
         return False
 
-    def find_function_by_name(self, func_name) -> 'FunctionNode':
-        loc_context = self
-        while loc_context.parent:
-            loc_context = loc_context.parent
-        func = list(filter(lambda x: x.name == func_name, loc_context.functions))
-        return func[0] if func else None
-
     def get_next_local_num(self):
         loc_context = self
         if loc_context.parent:
             while loc_context.parent.parent:
                 loc_context = loc_context.parent
-        return len(loc_context.vars) + 2*len(loc_context.params) + 1
+        return len(loc_context.vars) + 2 * len(loc_context.params) + 1
 
     def get_next_param_num(self):
         return len(self.params)
@@ -157,7 +148,7 @@ class Context(object):
 class BaseTypes(Enum):
     Int = 'int'
     Double = 'double'
-    #String = 'string'
+    # String = 'string'
     Bool = 'bool'
     Void = 'void'
     Char = 'char'
@@ -263,7 +254,7 @@ class LiteralNode(ExprNode):
         self.literal = literal.replace('\n', '\\n')
         if type(self.const) == str and literal[0] == '\"':  # type(self.const).__name__
             self.data_type = Type('string', row=self.row)
-            #self.data_type = Type('char', rang=1, row=self.row)
+            # self.data_type = Type('char', rang=1, row=self.row)
         elif type(self.const) == str and literal[0] == '\'':
             self.const = ord(self.const.encode('cp866'))
             self.data_type = Type('char', row=self.row)
@@ -296,10 +287,6 @@ class IdentNode(ExprNode):
                 self.var_type = v.var_type
                 self.data_type = v.data_type
         else:
-            '''v = context.find_function_by_name(self.name)
-            if v:
-                self.data_type = v.data_type
-            else:'''
             logger.error(str(self.row) + ': ' + self.name + ': unknown identifier')
 
     def code_generate(self, func=None, global_vars=None, global_arrays=None, level=0) -> str:
@@ -308,12 +295,12 @@ class IdentNode(ExprNode):
             return ''
         var_number += 1
         if self.var_type in (VarType.Param, VarType.Local):
-            t = '%' + str(self.index) # + len(func.params))
+            t = '%' + str(self.index)  # + len(func.params))
         else:
             t = '@' + 'g.' + str(self.index)
         code = '  %{0} = load {1}, {1}* {2}, align {3}\n'.format(var_number, LLVMTypes[str(self.data_type)][0],
-                                                                t, LLVMTypes[str(self.data_type)][1])
-        #self.index = var_number
+                                                                 t, LLVMTypes[str(self.data_type)][1])
+        # self.index = var_number
 
         return code
 
@@ -333,10 +320,10 @@ class CastNode(ExprNode):
         self.var = var
         if const is not None:
             if self.data_type.name is BaseTypes.Bool:
-                #self.const = bool(const)
+                # self.const = bool(const)
                 self.const = 1 if const else 0
-            #elif self.data_type.name is BaseTypes.String:
-             #   self.const = str(const)
+            # elif self.data_type.name is BaseTypes.String:
+            #   self.const = str(const)
             elif self.data_type.name is BaseTypes.Char:
                 self.const = const
             else:
@@ -359,18 +346,22 @@ class CastNode(ExprNode):
         if self.data_type.name is BaseTypes.Bool:
             if self.var.data_type.name is BaseTypes.Double:
                 t = LLVMFloatOps['!=']
-                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, t, LLVMTypes[self.var.data_type.name.value][0],
+                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, t,
+                                                              LLVMTypes[self.var.data_type.name.value][0],
                                                               n, float(0))
             elif self.var.data_type.name is BaseTypes.Int:
                 t = LLVMIntOps['!=']
-                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, t, LLVMTypes[self.var.data_type.name.value][0], n, 0)
+                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, t,
+                                                              LLVMTypes[self.var.data_type.name.value][0], n, 0)
         elif self.data_type.name is BaseTypes.Char:
-            code +=  '  %{0} = trunc i32 %{1} to i8\n'.format(var_number, var_number - 1)
+            code += '  %{0} = trunc i32 %{1} to i8\n'.format(var_number, var_number - 1)
         elif self.data_type.name is BaseTypes.Double:
-            code += '  %{0} = sitofp {1} %{2} to {3}\n'.format(var_number, LLVMTypes[self.var.data_type.name.value][0], n,
-                                                             LLVMTypes[self.data_type.name.value][0])
+            code += '  %{0} = sitofp {1} %{2} to {3}\n'.format(var_number, LLVMTypes[self.var.data_type.name.value][0],
+                                                               n,
+                                                               LLVMTypes[self.data_type.name.value][0])
         else:
-            code += '  %{0} = sext {1} %{2} to {3}\n'.format(var_number, LLVMTypes[self.var.data_type.name.value][0], n, LLVMTypes[self.data_type.name.value][0])
+            code += '  %{0} = sext {1} %{2} to {3}\n'.format(var_number, LLVMTypes[self.var.data_type.name.value][0], n,
+                                                             LLVMTypes[self.data_type.name.value][0])
         return code
 
     def __str__(self) -> str:
@@ -409,17 +400,17 @@ class BinOpNode(ExprNode):
             each.semantic_check(context)
         if not self.arg1.data_type or not self.arg2.data_type or not self.arg1.data_type.name or not self.arg2.data_type.name:
             return
-        #if self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name is BaseTypes.String and self.op.value not in ('+', '==', '!='):
+        # if self.arg1.data_type.name is BaseTypes.String and self.arg2.data_type.name is BaseTypes.String and self.op.value not in ('+', '==', '!='):
         if self.arg1.data_type.rang and self.arg2.data_type.rang:
             logger.error(
-                    str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
-                        self.arg1.data_type), str(self.arg2.data_type)))
+                str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
+                    self.arg1.data_type), str(self.arg2.data_type)))
             return
         if self.arg1.data_type.name is BaseTypes.Char and self.arg2.data_type.name is BaseTypes.Char:
             if self.op.value not in ('+', '==', '!='):
                 logger.error(
-                        str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
-                            self.arg1.data_type), str(self.arg2.data_type)))
+                    str(self.row) + ': \'{0}\' is not allowed for \'{1}\' and \'{2}\' types'.format(self.op.value, str(
+                        self.arg1.data_type), str(self.arg2.data_type)))
                 return
         if self.op.value in ('&&', '||'):
             self.data_type = Type('bool')
@@ -432,7 +423,7 @@ class BinOpNode(ExprNode):
                 self.data_type = self.arg1.data_type
             else:
                 self.data_type = Type('int', row=self.row)
-                #self.data_type = Type(BaseTypes.Char.value, rang=1, row=self.row)
+                # self.data_type = Type(BaseTypes.Char.value, rang=1, row=self.row)
         elif self.arg1.data_type.is_castable_to(self.arg2.data_type):
             self.data_type = self.arg2.data_type
             self.arg1 = CastNode(self.arg1, self.data_type, self.arg1.const)
@@ -455,13 +446,14 @@ class BinOpNode(ExprNode):
             elif self.op.value == '||':
                 self.const = bool(self.arg1.const or self.arg2.const)
             elif self.data_type.name is BaseTypes.Char:
-                #if self.arg1.data_type.name is BaseTypes.Char and self.arg2.data_type.name is BaseTypes.Char:
-                if self.arg1.data_type.rang==0 and self.arg2.data_type.rang==0:
-                        self.const = eval(
-                    '\"' + str(self.arg1.literal[1:-1]) + '\"' + self.op.value + '\"' + str(self.arg2.literal[1:-1]) + '\"')
+                # if self.arg1.data_type.name is BaseTypes.Char and self.arg2.data_type.name is BaseTypes.Char:
+                if self.arg1.data_type.rang == 0 and self.arg2.data_type.rang == 0:
+                    self.const = eval(
+                        '\"' + str(self.arg1.literal[1:-1]) + '\"' + self.op.value + '\"' + str(
+                            self.arg2.literal[1:-1]) + '\"')
                 else:
                     self.const = eval(
-                    '\"' + str(self.arg1.const) + '\"' + self.op.value + '\"' + str(self.arg2.const) + '\"')
+                        '\"' + str(self.arg1.const) + '\"' + self.op.value + '\"' + str(self.arg2.const) + '\"')
             else:
                 t = str(self.data_type)
                 if t == 'double':
@@ -485,7 +477,9 @@ class BinOpNode(ExprNode):
                 cur_path.append([])
             n1 = cur_label
             t = level + 1
-            if self.op is BinOp.LOGICAL_OR and (type(self.arg1) is BinOpNode and self.arg1.op is BinOp.LOGICAL_AND or type(self.arg2) is BinOpNode and self.arg2.op is BinOp.LOGICAL_AND):
+            if self.op is BinOp.LOGICAL_OR and (
+                    type(self.arg1) is BinOpNode and self.arg1.op is BinOp.LOGICAL_AND or type(
+                    self.arg2) is BinOpNode and self.arg2.op is BinOp.LOGICAL_AND):
                 t = 0
             if self.arg1.const is None:
                 first = self.arg1.code_generate(func, global_vars, global_arrays, t)
@@ -524,7 +518,7 @@ class BinOpNode(ExprNode):
                 tf = 'true' if self.op.value == '||' else 'false'
                 for el in cur_path.pop()[:-1]:
                     t += (', ' if t else '') + '[ {0}, %{1} ]'.format(tf, el)
-                t += (', ' if t else '' ) + '[ %{0}, %{1} ]'.format(var_number-1, n)
+                t += (', ' if t else '') + '[ %{0}, %{1} ]'.format(var_number - 1, n)
                 var_number += 1
                 code += '  %{0} = phi i1 {1}\n'.format(var_number, t)
         else:
@@ -533,25 +527,30 @@ class BinOpNode(ExprNode):
             elif self.arg1.data_type.name is BaseTypes.Double:
                 op = LLVMFloatOps[self.op.value]
             if self.arg1.const is None and self.arg2.const is None:
-                code += self.arg1.code_generate(func, global_vars, global_arrays)
-                n1 = var_number
                 code += self.arg2.code_generate(func, global_vars, global_arrays)
                 n2 = var_number
+                code += self.arg1.code_generate(func, global_vars, global_arrays)
+                n1 = var_number
                 var_number += 1
-                code += '  %{0} = {1} {2} %{3}, %{4}\n'.format(var_number, op, LLVMTypes[self.arg1.data_type.name.value][0], n1, n2)
+                code += '  %{0} = {1} {2} %{3}, %{4}\n'.format(var_number, op,
+                                                               LLVMTypes[self.arg1.data_type.name.value][0], n1, n2)
             elif self.arg1.const is not None:
                 code += self.arg2.code_generate(func, global_vars, global_arrays)
                 n2 = var_number
                 var_number += 1
-                code += '  %{0} = {1} {2} {3}, %{4}\n'.format(var_number, op, LLVMTypes[self.arg1.data_type.name.value][0], self.arg1.const, n2)
+                code += '  %{0} = {1} {2} {3}, %{4}\n'.format(var_number, op,
+                                                              LLVMTypes[self.arg1.data_type.name.value][0],
+                                                              self.arg1.const, n2)
             elif self.arg2.const is not None:
                 code += self.arg1.code_generate(func, global_vars, global_arrays)
                 n1 = var_number
                 var_number += 1
-                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, op, LLVMTypes[self.arg1.data_type.name.value][0], n1, self.arg2.const)
-            #else:
-             #   var_number += 1
-              #  code = '  {3} = {0} {1} {2} \n'.format(self.arg1.const, self.op.value, self.arg2.const, var_number)
+                code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, op,
+                                                              LLVMTypes[self.arg1.data_type.name.value][0], n1,
+                                                              self.arg2.const)
+            # else:
+            #   var_number += 1
+            #  code = '  {3} = {0} {1} {2} \n'.format(self.arg1.const, self.op.value, self.arg2.const, var_number)
 
         return code
 
@@ -595,7 +594,7 @@ class UnOpNode(ExprNode):
 
         if self.op.value == '!':
             self.data_type = Type('bool', row=self.row)
-            #self.arg = CastNode(self.arg, self.data_type, self.arg.const)
+            # self.arg = CastNode(self.arg, self.data_type, self.arg.const)
         else:
             self.data_type = self.arg.data_type
         self.const = self.arg.const
@@ -623,18 +622,20 @@ class UnOpNode(ExprNode):
         if self.const is None:
             code = self.arg.code_generate(func, global_vars, global_arrays)
         if self.op is UnOp.NOT:
-            var_number +=1
+            var_number += 1
             t = '0' if self.arg.data_type.name in (BaseTypes.Int, BaseTypes.Bool) else '0.0'
             op = LLVMIntOps['!='] if self.arg.data_type.name in (BaseTypes.Int, BaseTypes.Bool) else LLVMFloatOps['!=']
-            t2 = 'i1' if type(self.arg) is BinOpNode and self.arg.op.value in('>', '<', '==', '!=', '<=', '>=') else LLVMTypes[self.arg.data_type.name.value][0]
-            code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, op, t2, var_number - 1,  t)
+            t2 = 'i1' if type(self.arg) is BinOpNode and self.arg.op.value in ('>', '<', '==', '!=', '<=', '>=') else \
+            LLVMTypes[self.arg.data_type.name.value][0]
+            code += '  %{0} = {1} {2} %{3}, {4}\n'.format(var_number, op, t2, var_number - 1, t)
             var_number += 1
             code += '  %{0} = xor i1 %{1}, true\n'.format(var_number, var_number - 1)
-            #var_number += 1
-            #code += '  %{0} = zext i1 %{1} to i8\n'.format(var_number, var_number - 1)
+            # var_number += 1
+            # code += '  %{0} = zext i1 %{1} to i8\n'.format(var_number, var_number - 1)
         elif self.op is UnOp.SUB and self.const is None:
             var_number += 1
-            code += '  %{0} = sub {1} 0, %{2}\n'.format(var_number, LLVMTypes[self.data_type.name.value][0], var_number-1)
+            code += '  %{0} = sub {1} 0, %{2}\n'.format(var_number, LLVMTypes[self.data_type.name.value][0],
+                                                        var_number - 1)
         return code
 
 
@@ -674,13 +675,14 @@ class VarsDeclNode(StmtNode):
     def semantic_check(self, context: Context = None):
         for el in self.vars_list:
             arr = False
-            if not context.parent:
-                if type(el.val) is IdentNode and el.const is None or type(el.val) is ArrayIdentNode and any(
-                        elem.const is None for elem in el.val.elements):
-                    logger.error(str(el.var.row) + ': ' + str(el.var.name) + ': global variables must be const')
             if type(el) is AssignNode:
+                el.val.semantic_check(context)
+                if not context.parent:
+                    if type(el.val) is IdentNode and el.const is None or type(el.val) is ArrayIdentNode and any(
+                            elem.const is None for elem in el.val.elements):
+                        logger.error(str(el.var.row) + ': ' + str(el.var.name) + ': global variables must be const')
                 if type(el.val) is ArrayIdentNode:
-                    #context.add_array(el.var, el.val)
+                    # context.add_array(el.var, el.val)
                     arr = True if el.val.data_type.name is not BaseTypes.Char else False
                 el = el.var
 
@@ -692,10 +694,9 @@ class VarsDeclNode(StmtNode):
                 el.index = context.get_next_local_num()
                 el.data_type = self.vars_type
                 el.var_type = VarType.Local if context.parent else VarType.Global
-                if not arr:
-                    context.add_var(el)
+                context.add_var(el)
         for each in self.childs:
-           each.semantic_check(context)
+            each.semantic_check(context)
         if self.vars_type is None or self.vars_type.name == BaseTypes.Void:
             logger.error(str(self.row) + ': vars cannot be void')
 
@@ -739,41 +740,47 @@ class CallNode(StmtNode):
                 self.data_type = Type('int', row=self.row)
                 if type(self.params[0]) and self.params[0].data_type.rang:
                     arr = {**context.get_function_context().arrays, **context.get_function_context().parent.arrays}
-                    self.const = arr[list(filter(lambda k: k.index==self.params[0].index, arr))[0]].num.const * LLVMTypes[self.params[0].data_type.name.value][1]
+                    self.const = arr[list(filter(lambda k: k.index == self.params[0].index, arr))[0]].num.const * \
+                                 LLVMTypes[self.params[0].data_type.name.value][1]
                 else:
                     self.const = LLVMTypes[self.params[0].data_type.name.value][1]
             else:
                 logger.error(str(self.row) + ': \'sizeof\' gets only one argument')
             return
 
-        try:
-            v = context.find_function(self.func_name.name, self.params)
-            if v:
-                self.func = v
+        if all(param.data_type for param in self.params):
+            v = context.find_functions(self.func_name.name, self.params)
+            if len(v) == 1:
+                self.func = v[0]
                 self.data_type = self.func.data_type
                 if len(self.params) < len(self.func.params):
-                    logger.error(str(self.row) + ': ' + str(self.func_name.name) + ': not enough arguments in the function call')
+                    logger.error(
+                        str(self.row) + ': ' + str(self.func_name.name) + ': not enough arguments in the function call')
                 elif len(self.params) > len(self.func.params):
-                    logger.error(str(self.row) + ': ' + str(self.func_name.name) + ': too many arguments in the function call')
+                    logger.error(
+                        str(self.row) + ': ' + str(self.func_name.name) + ': too many arguments in the function call')
                 else:
                     for i, p in enumerate(self.params):
                         if str(self.func.params[i].data_type) != str(p.data_type):
                             if p.data_type.is_castable_to(self.func.params[i].data_type):
-                                self.params[i] = CastNode(self.params[i], self.func.params[i].data_type, self.params[i].const)
+                                self.params[i] = CastNode(self.params[i], self.func.params[i].data_type,
+                                                          self.params[i].const)
                             else:
-                                logger.error(str(self.row) + ': ' + str(self.func_name.name) + ': argument (' + str(i + 1) +
-                                             ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
-                                             str(self.func.params[i].data_type) + '\'')
-            else:
+                                logger.error(
+                                    str(self.row) + ': ' + str(self.func_name.name) + ': argument (' + str(i + 1) +
+                                    ') of type \'' + str(p.data_type) + '\' is not compatible with type \'' +
+                                    str(self.func.params[i].data_type) + '\'')
+            elif len(v) == 0:
                 p_str = ''
                 for p in self.params:
                     p_str += (', ' if p_str else '') + str(p.data_type)
                 logger.error(str(self.row) + ': {0}({1}) was not declared'.format(str(self.func_name.name), p_str))
-        except Exception:
-            str_params = ''
-            for param in self.params:
-                str_params += (', ' if str_params else '') + str(param.data_type)
-            logger.error(str(self.row) + ': there is more than one function named \'{0}\' that match ({1})'.format(self.func_name.name, str_params))
+            else:
+                str_params = ''
+                for param in self.params:
+                    str_params += (', ' if str_params else '') + str(param.data_type)
+                logger.error(str(self.row) + ': there is more than one function named \'{0}\' that match ({1})'.format(
+                    self.func_name.name, str_params))
 
     def code_generate(self, func=None, global_vars=None, global_arrays=None, level=0):
         code = ''
@@ -785,10 +792,12 @@ class CallNode(StmtNode):
             if arg.const is None:
                 code += arg.code_generate(func, global_vars, global_arrays)
             t = '%' + str(var_number) if arg.const is None else arg.const
-            params_code = '{0} {1}'.format(LLVMTypes[str(arg.data_type)][0], t ) + (', ' if params_code else '') + params_code
+            params_code = '{0} {1}'.format(LLVMTypes[str(arg.data_type)][0], t) + (
+                ', ' if params_code else '') + params_code
         if self.data_type.name is not BaseTypes.Void:
             var_number += 1
-            code += '  %{0} = call {1} {2}({3})\n'.format(var_number, LLVMTypes[str(self.data_type)][0], self.func.LLVMName(), params_code)
+            code += '  %{0} = call {1} {2}({3})\n'.format(var_number, LLVMTypes[str(self.data_type)][0],
+                                                          self.func.LLVMName(), params_code)
         else:
             code += '  call {0} {1}({2})\n'.format(LLVMTypes[str(self.data_type)][0], self.func.LLVMName(), params_code)
 
@@ -809,23 +818,29 @@ class FunctionNode(StmtNode):
 
     def check_params(self, params):
         return list(IdentNode(param.childs[1], param.vars_type) for param in params if
-                     param.vars_type.name)
+                    param.vars_type.name)
 
     @property
     def childs(self) -> Tuple[AstNode]:
         return (*self.body,)
 
     def LLVMName(self) -> str:
+        if self.name == 'main':
+            return '@main'
         types = {'int': 'H',
                  'void': 'X',
                  'double': 'N',
                  'char[]': 'PEAD',
                  'char': 'D',
                  'bool': 'D'}
-        args_str = ''.join(types[str(x.data_type)] for x in self.params)
-        if self.name == 'main':
-            return '@main'
-        return '@"?{0}@@YA{1}{2}Z"'.format(self.name, types[str(self.data_type)],(args_str + '@') if args_str else 'X')
+
+        name = '@"?{0}@@YA{1}'.format(self.name, types[str(self.data_type)])
+        args_str = ''
+        for p in self.params:
+            args_str += types[str(p.data_type)]
+            if str(p.data_type) == 'char[]':
+                types[str(p.data_type)] = '0'
+        return name + ((args_str + '@') if args_str else 'X') + 'Z\"'
 
     def find_var(self, var_name):
         if self.args_list is None:
@@ -852,7 +867,7 @@ class FunctionNode(StmtNode):
 
     def semantic_check(self, context: Context = None):
         if context.check_if_was_declared(self.name, self.params):
-            str_params =''
+            str_params = ''
             for param in self.params:
                 str_params += (', ' if str_params else '') + str(param.data_type)
             logger.error(str(self.row) + ': function \'{0}\'({1}) was already declared'.format(self.name, str_params))
@@ -872,7 +887,7 @@ class FunctionNode(StmtNode):
         for each in self.childs:
             each.semantic_check(new_context)
 
-        if self.name == 'main' and len(self.params)>0:
+        if self.name == 'main' and len(self.params) > 0:
             if self.params[0].data_type.name is not BaseTypes.Int or self.params[0].data_type.rang:
                 logger.error(str(self.row) + ' : first parameter of \'main\' must be of type \'int\'')
 
@@ -901,8 +916,12 @@ class FunctionNode(StmtNode):
         code = ''
         for k, v in self.arrays.items():
             if v.data_type.name is BaseTypes.Char:
-                sym_str = ''.join('\\' + hex(x.const)[hex(x.const).find('x') + 1:].capitalize().rjust(2, '0') for x in v.elements)
-                code += '@{0}.{1} = dso_local unnamed_addr constant [{2} x i8] c"{3}", align 1\n'.format(self.name, v.all_elements_hex() , v.num.const, sym_str)
+                sym_str = ''.join(
+                    '\\' + hex(x.const)[hex(x.const).find('x') + 1:].capitalize().rjust(2, '0') for x in v.elements)
+                code += '@{0}.{1} = dso_local unnamed_addr constant [{2} x i8] c"{3}", align 1\n'.format(self.name,
+                                                                                                         v.all_elements_hex(),
+                                                                                                         v.num.const,
+                                                                                                         sym_str)
         code += '\n'
         sb = body = ''
         for param in self.params:
@@ -921,13 +940,16 @@ class FunctionNode(StmtNode):
             else:
                 num = list(filter(lambda x: x.index == elem.index, self.arrays))
                 num = self.arrays[num[0]].num.const if num else 0
-                body += '  %{0} = alloca [{1} x {2}], align 16\n'.format(var_number, num, LLVMTypes[elem.data_type.name.value][0])
+                body += '  %{0} = alloca [{1} x {2}], align 16\n'.format(var_number, num,
+                                                                         LLVMTypes[elem.data_type.name.value][0])
             elem.index = var_number
         if self.return_num is not None:
             var_number += 1
             body += '  %{0} = alloca {1}, align {2}\n'.format(var_number, *LLVMTypes[self.data_type.name.value])
-        for i in range(len(self.params), 0 , -1):
-            body += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[str(self.params[i-1].data_type)][0], i - 1 , self.params[i-1].index, LLVMTypes[str(self.params[i-1].data_type)][1])
+        for i in range(len(self.params), 0, -1):
+            body += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[str(self.params[i - 1].data_type)][0],
+                                                                      i - 1, self.params[i - 1].index,
+                                                                      LLVMTypes[str(self.params[i - 1].data_type)][1])
         for each in self.childs:
             body += each.code_generate(self, global_vars, global_arrays)
         if self.data_type.name is BaseTypes.Void:
@@ -938,7 +960,9 @@ class FunctionNode(StmtNode):
                 body += '; <label>:{_return}:\n'
             body = body.format(_return=var_number)
             var_number += 1
-            body += '  %{0} = load {1}, {1}* %{2}, align {3}\n'.format(var_number, LLVMTypes[str(self.data_type)][0], self.return_num, LLVMTypes[str(self.data_type)][1])
+            body += '  %{0} = load {1}, {1}* %{2}, align {3}\n'.format(var_number, LLVMTypes[str(self.data_type)][0],
+                                                                       self.return_num,
+                                                                       LLVMTypes[str(self.data_type)][1])
             body += '  ret {0} %{1}\n'.format(LLVMTypes[str(self.data_type)][0], var_number)
 
         body = body.format(_return=var_number)
@@ -960,25 +984,40 @@ class AssignNode(StmtNode):
 
     def semantic_check(self, context: Context = None):
         if type(self.val) is ArrayIdentNode:
-            self.val.semantic_check(context)
-            self.var.data_type = self.val.data_type
-            self.var.var_type = VarType.Local if context.parent else VarType.Global
-            if self.val.data_type.name is BaseTypes.Char:
-                self.var.semantic_check(context)
-            else:
-                self.var.index = context.get_next_local_num()
-                context.add_var(self.var)
-            context.add_array(self.var, self.val)
+            #self.val.semantic_check(context)
+            #self.var.data_type = self.val.data_type
+            #if self.val.data_type.name is BaseTypes.Char:
+              #  self.var.semantic_check(context)
+            #else:
+            self.var.semantic_check(context)
+            if self.val.data_type.name is not BaseTypes.Char:
+                if self.var.var_type is VarType.Local:
+                    if not list(filter(lambda x: x==self.var,context.vars)):
+                        self.var.index = context.get_next_local_num()
+                        context.add_var(self.var)
+                    context.add_array(self.var, self.val)
+                elif self.var.var_type is VarType.Global:
+                    p = context.get_function_context().parent if context.parent else context
+                    #p.add_var(self.var)
+                    if context.parent:
+                        if not list(filter(lambda x: x == self.var, p.vars)):
+                            self.var.index = p.get_next_local_num()
+                            p.add_var(self.var)
+                            val = copy.deepcopy(self.val)
+                            val.elements = []
+                            p.add_array(self.var, val)
+                    else:
+                        context.add_array(self.var, self.val)
         else:
             for each in self.childs:
                 each.semantic_check(context)
         if self.var.data_type.rang and self.val.data_type.rang and type(self.val) is IdentNode:
-            #con = context.get_function_context()
-            #v = list(filter(lambda k: k.index ==self.val.index, con.arrays.keys()))[0]
+            # con = context.get_function_context()
+            # v = list(filter(lambda k: k.index ==self.val.index, con.arrays.keys()))[0]
             self.var.index = self.val.index
             self.var.var_type = self.val.var_type
             context.add_var(self.var)
-            #context.add_array(self.var, con.arrays[v])
+            # context.add_array(self.var, con.arrays[v])
         if not self.var.data_type or not self.var.data_type or not self.val.data_type or not self.val.data_type.name or not self.var.data_type.name:
             return
         self.data_type = self.var.data_type
@@ -989,7 +1028,6 @@ class AssignNode(StmtNode):
             else:
                 logger.error(str(self.var.row) + ': ' + str(self.var.name) + ': value does not match \'' + str(
                     self.data_type) + '\' type')
-
 
         self.const = self.val.const
 
@@ -1013,7 +1051,7 @@ class AssignNode(StmtNode):
                                                                              LLVMTypes[self.data_type.name.value][1])
             else:
                 if self.var.var_type in (VarType.Param, VarType.Local):
-                    t = '%' + str(self.var.index) # + len(func.params))
+                    t = '%' + str(self.var.index)  # + len(func.params))
                 else:
                     t = '@' + 'g.' + str(self.var.index)
                 # pass (вероятно это должно как-то быть в semantic_check)
@@ -1023,36 +1061,49 @@ class AssignNode(StmtNode):
 
                 if self.const is None:
                     n = var_number
-                    code += '  store {0} %{1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0], n, t, LLVMTypes[str(self.data_type)][1])
+                    code += '  store {0} %{1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0], n, t,
+                                                                             LLVMTypes[str(self.data_type)][1])
                 else:
-                    code += '  store {0} {1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0], self.val.const, t, LLVMTypes[str(self.data_type)][1])
+                    code += '  store {0} {1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0],
+                                                                            self.val.const, t,
+                                                                            LLVMTypes[str(self.data_type)][1])
         elif type(self.val) is ArrayIdentNode and self.data_type.name is BaseTypes.Char:
             if type(self.val) is ArrayIdentNode:
                 code += '  store i8* getelementptr inbounds ([{0} x i8], [{0} x i8]* @{1}.{2}, i32 0, i32 0), i8** %{3}, align 8\n'.format(
-                        self.val.num.const, func.name, self.val.all_elements_hex(), self.var.index)
+                    self.val.num.const, func.name, self.val.all_elements_hex(), self.var.index)
             else:
                 if self.var.var_type in (VarType.Param, VarType.Local):
-                    t = '%' + str(self.var.index) # + len(func.params))
+                    t = '%' + str(self.var.index)  # + len(func.params))
                 else:
                     t = '@' + 'g.' + str(self.var.index)
                 code += self.val.code_generate(func, global_vars, global_arrays)
-                code += '  store {0} %{1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0], var_number, t, LLVMTypes[str(self.data_type)][1])
+                code += '  store {0} %{1}, {0}* {2}, align {3}\n'.format(LLVMTypes[str(self.data_type)][0], var_number,
+                                                                         t, LLVMTypes[str(self.data_type)][1])
         elif type(self.val) is ArrayIdentNode:
             num = None
             for el in self.val.elements:
                 n1 = var_number
-                var_number +=1
-                if num is None:
-                    code += '  %{0} = getelementptr inbounds [{1} x {2}], [{1} x {2}]* %{3}, i64 0, i64 0\n'.format(var_number, self.val.num.const, LLVMTypes[self.data_type.name.value][0], self.var.index)
+                var_number += 1
+                if self.var.var_type == VarType.Global:
+                    t = '@' + 'g.' + str(self.var.index)
                 else:
-                    code += '  %{0} = getelementptr inbounds {1}, {1}* %{2}, i64 1\n'.format(var_number, LLVMTypes[self.data_type.name.value][0], num)
+                    t = '%' + str(self.var.index)
+                if num is None:
+                    code += '  %{0} = getelementptr inbounds [{1} x {2}], [{1} x {2}]* {3}, i64 0, i64 0\n'.format(
+                        var_number, self.val.num.const, LLVMTypes[self.data_type.name.value][0], t)
+                else:
+                    code += '  %{0} = getelementptr inbounds {1}, {1}* %{2}, i64 1\n'.format(var_number, LLVMTypes[
+                        self.data_type.name.value][0], num)
                 num = var_number
                 if el.const is None:
                     code += el.code_generate(func, global_vars, global_arrays)
-                    code += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0], var_number, num, LLVMTypes[self.data_type.name.value][1])
+                    code += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0],
+                                                                              var_number, num,
+                                                                              LLVMTypes[self.data_type.name.value][1])
                 else:
                     code += '  store {0} {1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0],
-                                                                              el.const, num, LLVMTypes[self.data_type.name.value][1])
+                                                                             el.const, num,
+                                                                             LLVMTypes[self.data_type.name.value][1])
         return code
 
     def __str__(self) -> str:
@@ -1088,11 +1139,11 @@ class ElementNode(ExprNode):
         if not v:
             logger.error(str(self.row) + ': ' + str(self.name.name) + ': unknown identifier')
             return
-        if v.data_type.rang == 0: #and v.data_type.name is not BaseTypes.String:
+        if v.data_type.rang == 0:  # and v.data_type.name is not BaseTypes.String:
             logger.error(str(self.row) + ': index can be used only with \'string\' type or array')
             return
-        #if v.data_type.name is BaseTypes.String:
-         #   self.data_type = Type('char', row=self.row)
+        # if v.data_type.name is BaseTypes.String:
+        #   self.data_type = Type('char', row=self.row)
         else:
             self.data_type = Type(v.data_type.name.value, row=self.row)
         self.var_type = v.var_type
@@ -1118,19 +1169,19 @@ class ElementNode(ExprNode):
             code += '  %{0} = sext i32 %{1} to i64\n'.format(var_number, var_number - 1)
 
         var_number += 1
-        if self.var_type==VarType.Global:
+        if self.var_type == VarType.Global:
             t = '@' + 'g.' + str(self.name.index)
         else:
-            t= '%' + str(self.name.index)
+            t = '%' + str(self.name.index)
         if self.data_type.name is BaseTypes.Char:
             code += '  %{0} = load i8*, i8** {1}, align 8\n'.format(var_number, t)
             var_number += 1
             if self.num.const is not None:
                 code += '  %{0} = getelementptr inbounds i8, i8* %{1}, i64 {2}\n'.format(
-                    var_number, var_number-1, self.num.const)
+                    var_number, var_number - 1, self.num.const)
             else:
                 code += '  %{0} = getelementptr inbounds i8, i8* %{1}, i64 %{2}\n'.format(
-                    var_number, var_number-1, var_number - 2)
+                    var_number, var_number - 1, var_number - 2)
         else:
             arr = {**func.arrays, **global_arrays}
             length = arr[list(filter(lambda x: x.index == self.name.index and x.var_type == self.name.var_type, arr))[0]].num.const
@@ -1182,16 +1233,21 @@ class ArrayIdentNode(ExprNode):
                 else:
                     logger.error(str(self.row) + ': type of element ' + str(i) + ' does not match type of array')
         if self.data_type.name is BaseTypes.Char:
-            context.add_array(IdentNode('none'),self)
+            context.add_array(IdentNode('none'), self)
 
     def all_elements_hex(self):
         return ''.join(hex(x.const)[hex(x.const).find('x') + 1:].capitalize().rjust(2, '0') for x in self.elements)
 
     def code_generate(self, func=None, global_vars=None, global_arrays=None, level=0):
         global var_number
-        var_number+= 1
-        code = '  %{0} = getelementptr inbounds [{1} x {2}], [{1} x {2}]* @{3}.{4}, i64 0, i64 0\n'.format(var_number, self.num.const, LLVMTypes[self.data_type.name.value][0], func.name, self.all_elements_hex())
+        var_number += 1
+        code = '  %{0} = getelementptr inbounds [{1} x {2}], [{1} x {2}]* @{3}.{4}, i64 0, i64 0\n'.format(var_number,
+                                                                                                           self.num.const,
+                                                                                                           LLVMTypes[self.data_type.name.value][0],
+                                                                                                           func.name,
+                                                                                                           self.all_elements_hex())
         return code
+
 
 class ReturnNode(StmtNode):
     def __init__(self, val: ExprNode = None,
@@ -1218,8 +1274,9 @@ class ReturnNode(StmtNode):
             elif self.val.data_type.is_castable_to(self.data_type):
                 if str(self.val.data_type) != str(self.data_type):
                     self.val = CastNode(self.val, self.data_type, self.val.const, row=self.row)
-                    t = self.data_type.name.value if self.data_type.name is not BaseTypes.Double else 'float'
-                    self.const = eval('{0}({1})'.format(t, self.const))
+                    if self.const is not None:
+                        t = self.data_type.name.value if self.data_type.name is not BaseTypes.Double else 'float'
+                        self.const = eval('{0}({1})'.format(t, self.const))
             else:
                 logger.error(str(self.row) + ': function must return \'' + str(self.data_type) + '\' value')
         elif self.data_type.name is not BaseTypes.Void:
@@ -1238,10 +1295,14 @@ class ReturnNode(StmtNode):
                 code += '  ret {0} %{1}\n'.format(LLVMTypes[self.val.data_type.name.value][0], var_number)
         else:
             if self.const is not None:
-                code = '  store {0} {1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0], str(self.const), self.index, LLVMTypes[self.data_type.name.value][1])
+                code = '  store {0} {1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.data_type.name.value][0],
+                                                                        str(self.const), self.index,
+                                                                        LLVMTypes[self.data_type.name.value][1])
             elif self.val:
                 code += self.val.code_generate(func, global_vars, global_arrays)
-                code += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.val.data_type.name.value][0], var_number, self.index, LLVMTypes[self.data_type.name.value][1])
+                code += '  store {0} %{1}, {0}* %{2}, align {3}\n'.format(LLVMTypes[self.val.data_type.name.value][0],
+                                                                          var_number, self.index,
+                                                                          LLVMTypes[self.data_type.name.value][1])
             code += '  br label %{_return}\n\n'
             cur_label = None
         return code
@@ -1332,7 +1393,7 @@ class IfNode(StmtNode):
             cond = self.cond.code_generate(func, global_vars, global_arrays)
             if type(self.cond) is IdentNode:
                 var_number += 1
-                cond += '  %{0} = trunc i8 %{1} to i1\n'.format(var_number, var_number-1)
+                cond += '  %{0} = trunc i8 %{1} to i1\n'.format(var_number, var_number - 1)
             cond += '  br i1 %{_cond_value}, label %{_label_then}, label %{_label_else}\n\n'
         else:
             if self.cond.const:
@@ -1341,7 +1402,7 @@ class IfNode(StmtNode):
                 cond += '  br label %{_label_else}\n\n'
             else:
                 cond += '  br label %{_label_end}\n\n'
-        #start = cur_label
+        # start = cur_label
         cond_value = var_number
         var_number += 1
         label_then = var_number
@@ -1354,7 +1415,7 @@ class IfNode(StmtNode):
         label_else = var_number
         else_stmt = ''
         if self.else_stmt:
-            #el = var_number
+            # el = var_number
             cur_label = var_number
             else_stmt = '; <label>:{_label_else}:\n' + self.else_stmt.code_generate(func, global_vars, global_arrays)
             n2 = cur_label
@@ -1365,7 +1426,8 @@ class IfNode(StmtNode):
         cur_label = label_end
 
         code = cond + then_stmt + else_stmt + '; <label>:{_label_end}:\n'
-        code = code.format(_cond_value=cond_value, _label_then=label_then, _label_else=label_else, _label_end=label_end, _break='{_break}',_continue='{_continue}', _return='{_return}')
+        code = code.format(_cond_value=cond_value, _label_then=label_then, _label_else=label_else, _label_end=label_end,
+                           _break='{_break}', _continue='{_continue}', _return='{_return}')
         cur_label = var_number
         return code
 
@@ -1429,7 +1491,8 @@ class ForNode(LoopNode):
 
         cur_label = label_end
         code = init + cond + body + step + '; <label>:{_label_end}:\n'
-        code = code.format(_cond_value=cond_value, _label_cond=label_cond, _label_body=label_body, _label_step=label_step,
+        code = code.format(_cond_value=cond_value, _label_cond=label_cond, _label_body=label_body,
+                           _label_step=label_step,
                            _label_end=label_end, _break=label_end, _continue=label_step, _return='{_return}')
         return code
 
@@ -1476,13 +1539,15 @@ class WhileNode(LoopNode):
 
         label_body = var_number
         cur_label = var_number
-        body = '; <label>:{_label_body}:\n' + self.body.code_generate(func, global_vars, global_arrays) + ('  br label %{_label_cond}\n\n' if cur_label else '')
+        body = '; <label>:{_label_body}:\n' + self.body.code_generate(func, global_vars, global_arrays) + (
+            '  br label %{_label_cond}\n\n' if cur_label else '')
         var_number += 1
 
         label_end = var_number
         code = '  br label %{_label_cond}\n\n;' + cond + body + '; <label>:{_label_end}:\n'
         cur_label = label_end
-        code = code.format(_cond_value=cond_value, _label_cond=label_cond, _label_body=label_body, _label_end=label_end, _break=label_end, _continue=label_cond, _return='{_return}')
+        code = code.format(_cond_value=cond_value, _label_cond=label_cond, _label_body=label_body, _label_end=label_end,
+                           _break=label_end, _continue=label_cond, _return='{_return}')
         return code
 
 
@@ -1515,7 +1580,8 @@ class DoWhileNode(LoopNode):
         var_number += 1
         cur_label = var_number
         label_body = cur_label
-        body = '; <label>:{_label_body}:\n' + self.body.code_generate(func, global_vars, global_arrays) + ('  br label %{_label_cond}\n\n' if cur_label else '')
+        body = '; <label>:{_label_body}:\n' + self.body.code_generate(func, global_vars, global_arrays) + (
+            '  br label %{_label_cond}\n\n' if cur_label else '')
         var_number += 1
 
         label_cond = var_number
@@ -1554,7 +1620,7 @@ class StatementListNode(StmtNode):
         return self.exprs
 
     def semantic_check(self, context: Context = None):
-        #context = Context(context)
+        # context = Context(context)
         for each in self.childs:
             each.semantic_check(context)
 
@@ -1575,27 +1641,29 @@ class BlockNode(StatementListNode):
 
 
 class Program(StatementListNode):
-    def __init__(self, *exprs: StmtNode, standard_functions = None,
+    def __init__(self, *exprs: StmtNode, standard_functions=None,
                  row: Optional[int] = None, line: Optional[int] = None, **props):
         super().__init__(exprs=exprs, row=row, line=line, **props)
         self.exprs = exprs
         self.global_vars = []
         self.global_arrays = []
-        self.standard_functions = [FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('int'), (IdentNode('a'), )),)),
-                                   FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('double'), (IdentNode('a'), )),)),
-                                   FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('char'), (IdentNode('a'),)),)),
-                                   FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('string'), (IdentNode('a'),)),)),
-                                   FunctionNode(Type('string'), 'to_str',
-                                                (VarsDeclNode(Type('int'), (IdentNode('a'),)),)),
-                                   FunctionNode(Type('string'), 'to_str',
-                                                (VarsDeclNode(Type('double'), (IdentNode('a'),)),)),
-                                   FunctionNode(Type('string'), 'to_str',
-                                                (VarsDeclNode(Type('char'), (IdentNode('a'),)),)),
-                                   FunctionNode(Type('int'), 'input_int'),
-                                   FunctionNode(Type('char'), 'input_char'),
-                                   FunctionNode(Type('string'), 'input_str'),
-                                   FunctionNode(Type('double'), 'input_double'),
-                                   FunctionNode(Type('string'), 'concat', (VarsDeclNode(Type('string'), (IdentNode('s1'), )), VarsDeclNode(Type('string'), (IdentNode('s2'), ))))]
+        self.standard_functions = [
+            FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('int'), (IdentNode('a'),)),)),
+            FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('double'), (IdentNode('a'),)),)),
+            FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('char'), (IdentNode('a'),)),)),
+            FunctionNode(Type('void'), 'output', (VarsDeclNode(Type('string'), (IdentNode('a'),)),)),
+            FunctionNode(Type('string'), 'to_str',
+                         (VarsDeclNode(Type('int'), (IdentNode('a'),)),)),
+            FunctionNode(Type('string'), 'to_str',
+                         (VarsDeclNode(Type('double'), (IdentNode('a'),)),)),
+            FunctionNode(Type('string'), 'to_str',
+                         (VarsDeclNode(Type('char'), (IdentNode('a'),)),)),
+            FunctionNode(Type('int'), 'input_int'),
+            FunctionNode(Type('char'), 'input_char'),
+            FunctionNode(Type('string'), 'input_str'),
+            FunctionNode(Type('double'), 'input_double'),
+            FunctionNode(Type('string'), 'concat', (
+            VarsDeclNode(Type('string'), (IdentNode('s1'),)), VarsDeclNode(Type('string'), (IdentNode('s2'),))))]
 
     def semantic_check(self, context: Context = None):
         context = Context(functions=self.standard_functions[::])
@@ -1604,39 +1672,51 @@ class Program(StatementListNode):
                 each.semantic_check(context)
                 if type(each) is VarsDeclNode:
                     each: VarsDeclNode
-                    self.global_vars.extend(each.vars_list)
+                    self.global_vars.extend(x for x in each.vars_list if type(x) is IdentNode )
+        for k,v in context.arrays.items():
+            an = AssignNode(k,v)
+            an.data_type = an.var.data_type
+            self.global_vars.append(an)
         self.global_arrays = context.arrays
-        if (not any(type(x) is FunctionNode and x.name=='main' for x in self.childs)):
+        if (not any(type(x) is FunctionNode and x.name == 'main' for x in self.childs)):
             logger.error('1 : function \'main\' must be declared')
-            
+
     def code_generate(self, func=None, global_vars=None, global_arrays=None, level=0) -> str:
         code = ''
         for func in self.standard_functions:
             args_str = ''
             for arg in func.params:
                 args_str += (', ' if args_str else '') + LLVMTypes[str(arg.data_type)][0]
-            code += 'declare dso_local {0} {1}({2})\n\n'.format(LLVMTypes[str(func.data_type)][0], func.LLVMName(), args_str)
+            code += 'declare dso_local {0} {1}({2})\n\n'.format(LLVMTypes[str(func.data_type)][0], func.LLVMName(),
+                                                                args_str)
         for var in self.global_vars:
             if type(var) is IdentNode and var.data_type.rang == 0:
-                code += '@{0} = common dso_local global {1} {2}, align {3}\n'.format('g.' + str(var.index), LLVMTypes[var.data_type.name.value][0],
-                                                                                   DefaultValues[var.data_type.name.value],
-                                                                                   LLVMTypes[var.data_type.name.value][1])
+                code += '@{0} = common dso_local global {1} {2}, align {3}\n'.format('g.' + str(var.index), LLVMTypes[
+                    var.data_type.name.value][0],
+                                                                                     DefaultValues[var.data_type.name.value],
+                                                                                     LLVMTypes[var.data_type.name.value][1])
             elif type(var) is IdentNode and var.data_type.rang == 1:
-                code += '@{0} = common dso_local global [1 x i32] zeroinitializer, align {1}\n'.format('g.' + str(var.index), LLVMTypes[var.data_type.name.value][1])
+                code += '@{0} = common dso_local global [1 x i32] zeroinitializer, align {1}\n'.format(
+                    'g.' + str(var.index), LLVMTypes[var.data_type.name.value][1])
             elif type(var) is AssignNode and var.var.data_type.rang == 0:
-                code += '@{0} = dso_local global {1} {2}, align {3}\n'.format('g.' + str(var.var.index), LLVMTypes[var.data_type.name.value][0],
-                                                                                   var.const,
-                                                                                   LLVMTypes[var.data_type.name.value][1])
+                code += '@{0} = dso_local global {1} {2}, align {3}\n'.format('g.' + str(var.var.index),
+                                                                              LLVMTypes[var.data_type.name.value][0],
+                                                                              var.const,
+                                                                              LLVMTypes[var.data_type.name.value][1])
             elif type(var) is AssignNode and var.var.data_type.rang == 1:
                 if len(var.val.elements) > 0:
                     el_str = ''
                     for el in var.val.elements:
-                        el_str += (', ' if el_str else '') + '{0} {1}'.format(LLVMTypes[var.data_type.name.value][0], el.const)
-                    code += '@{0} = dso_local global [{1} x {2}] [{3}], align 16\n'.format('g.' + str(var.var.index), var.val.num.const, LLVMTypes[var.data_type.name.value][0],
-                                                                                      el_str)
+                        el_str += (', ' if el_str else '') + '{0} {1}'.format(LLVMTypes[var.data_type.name.value][0],
+                                                                              el.const)
+                    code += '@{0} = dso_local global [{1} x {2}] [{3}], align 16\n'.format('g.' + str(var.var.index),
+                                                                                           var.val.num.const,
+                                                                                           LLVMTypes[var.data_type.name.value][0],
+                                                                                           el_str)
                 else:
-                    code += '@{0} = common dso_local global [{1} x i32] zeroinitializer, align {2}\n'.format('g.' + str(var.var.index), var.val.num.const,
-                                                                                                           LLVMTypes[var.data_type.name.value][1])
+                    code += '@{0} = common dso_local global [{1} x i32] zeroinitializer, align {2}\n'.format(
+                        'g.' + str(var.var.index), var.val.num.const,
+                        LLVMTypes[var.data_type.name.value][1])
 
         code += '\n'
         for each in self.childs:
