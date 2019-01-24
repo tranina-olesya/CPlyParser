@@ -56,8 +56,8 @@ void bool_values()
 
 void sort()
 {
-	int[] a = new int[5];
-	int size = 5;
+	int[] a = new int[10];
+	int size = 10;
 	for (int i = 0; i < size; i++)
 		a[i] = input_int();
 
@@ -90,29 +90,7 @@ void waiting_for_100()
 
 int main()
 {
-	for (;;)
-	{
-		output('_');
-		int a = input_int();
-		output(' ');
-		if (a == 0)
-			break;
-		if (a == 1)
-			fibonacci();
-		if (a == 2)
-			output(factorial(input_int()));
-		if (a == 3)
-		{
-			output(search(6));
-			output(search(23));
-		}
-		if (a == 4)
-			bool_values();
-		if (a == 5)
 			sort();
-		if (a == 6)
-			waiting_for_100();
-	}
 	return 0;
 }
 

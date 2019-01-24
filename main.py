@@ -4,8 +4,9 @@ import sys
 
 
 test4 = '''
-void main() { 
-	
+void main() {
+
+int an, size = an = 7;
 }
 '''
 #build_tree(test4)

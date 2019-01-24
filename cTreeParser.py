@@ -66,7 +66,7 @@ t_NUMBER = r'\d+\.?\d*([eE][+-]?\d+)?'
 t_BRACKETS = r'\[\s*\]'
 t_ignore = ' \r\t'
 t_STRING = r'"(.|\n)*?"'
-t_CHAR = r"'(.|\\n)'"
+t_CHAR = r"'(.|\\(r|n|t))'"
 
 
 def t_IDENT(t):
@@ -478,14 +478,18 @@ def p_array_initializer(t):
 def p_array_value(t):
     '''array_value : NEW type LBRACKET logical_expression RBRACKET
                    | NEW type BRACKETS LBRACE args_list RBRACE
-                   | NEW type LBRACKET logical_expression RBRACKET LBRACE args_list RBRACE'''
-    t[2].rang = 1
-    if len(t) == 6:
-        t[0] = ArrayIdentNode(t[2], t[4], row=t.lexer.lineno)
-    elif len(t) == 7:
-        t[0] = ArrayIdentNode(t[2], None, *t[5].childs, row=t.lexer.lineno)
+                   | NEW type LBRACKET logical_expression RBRACKET LBRACE args_list RBRACE
+                   | string '''
+    if len(t) == 2:
+        t[0] = t[1]
     else:
-        t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs, row=t.lexer.lineno)
+        t[2].rang = 1
+        if len(t) == 6:
+            t[0] = ArrayIdentNode(t[2], t[4], row=t.lexer.lineno)
+        elif len(t) == 7:
+            t[0] = ArrayIdentNode(t[2], None, *t[5].childs, row=t.lexer.lineno)
+        else:
+            t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs, row=t.lexer.lineno)
 
 
 def p_array_ident(t):
@@ -570,6 +574,6 @@ def code_generate(file_name):
     p = parser.parse(s)
     p.semantic_check()
     w_file_name = file_name + '.ll'
-    with open(w_file_name, 'w') as file:
-        if not logger.error.counter:
+    if not logger.error.counter:
+        with open(w_file_name, 'w') as file:
             file.write(p.code_generate())
