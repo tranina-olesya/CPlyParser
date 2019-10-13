@@ -1,7 +1,12 @@
-import ply.lex as lex
-from ast_nodes import *
-import ply.yacc as yacc
 import os
+
+import ply.lex as lex
+import ply.yacc as yacc
+
+from ast_nodes import *
+from loop_nodes import *
+from statement_nodes import *
+from program_node import Program
 
 tokens = [
     'NUMBER', 'IDENT', 'STRING', 'CHAR',
@@ -142,7 +147,7 @@ def p_simple_statement(t):
 
 def p_block(t):
     'block : LBRACE statement_list RBRACE'
-    t[0] = BlockNode(*t[2].childs)
+    t[0] = BlockNode(*t[2].children)
 
 
 def p_selection_statement(t):
@@ -370,12 +375,12 @@ def p_char(t):
 
 def p_call(t):
     '''call : ident LPAREN args_list RPAREN'''
-    t[0] = CallNode(t[1], *t[3].childs, row=t.lexer.lineno)
+    t[0] = CallNode(t[1], *t[3].children, row=t.lexer.lineno)
 
 
 def p_function_definition(t):
     '''function_definition : type ident LPAREN arguments_declaration_list RPAREN block'''
-    t[0] = FunctionNode(t[1], t[2].name, t[4].childs, *t[6].childs, row=t.lexer.lineno)
+    t[0] = FunctionNode(t[1], t[2].name, t[4].children, *t[6].children, row=t.lexer.lineno)
 
 
 def p_arguments_declaration_list(t):
@@ -413,9 +418,9 @@ def p_vars_declaration(t):
     '''vars_declaration : type init_declarator_list
                         | type_array init_array_declarator_list'''
     if len(t) > 3:
-        t[0] = VarsDeclNode(t[1], *t[4].childs, row=t.lexer.lineno)
+        t[0] = VarsDeclNode(t[1], *t[4].children, row=t.lexer.lineno)
     else:
-        t[0] = VarsDeclNode(t[1], *t[2].childs, row=t.lexer.lineno)
+        t[0] = VarsDeclNode(t[1], *t[2].children, row=t.lexer.lineno)
 
 
 def p_ident(t):
@@ -487,9 +492,9 @@ def p_array_value(t):
         if len(t) == 6:
             t[0] = ArrayIdentNode(t[2], t[4], row=t.lexer.lineno)
         elif len(t) == 7:
-            t[0] = ArrayIdentNode(t[2], None, *t[5].childs, row=t.lexer.lineno)
+            t[0] = ArrayIdentNode(t[2], None, *t[5].children, row=t.lexer.lineno)
         else:
-            t[0] = ArrayIdentNode(t[2], t[4], *t[7].childs, row=t.lexer.lineno)
+            t[0] = ArrayIdentNode(t[2], t[4], *t[7].children, row=t.lexer.lineno)
 
 
 def p_array_ident(t):
@@ -511,7 +516,7 @@ def p_get_element(t):
 def p_for(t):
     '''for : FOR LPAREN expression_list SEMICOLON for_condition SEMICOLON expression_list RPAREN statement'''
     if type(t[9]) is BlockNode:
-        t[9] = StatementListNode(*t[9].childs)
+        t[9] = StatementListNode(*t[9].children)
     t[0] = ForNode(t[3], t[5], t[7], t[9], row=t.lexer.lineno)
 
 
@@ -525,7 +530,7 @@ def p_for_condition(t):
 def p_dowhile(t):
     '''dowhile : DO statement WHILE LPAREN logical_expression RPAREN semicolons'''
     if type(t[2]) is BlockNode:
-        t[2] = StatementListNode(*t[2].childs)
+        t[2] = StatementListNode(*t[2].children)
     t[0] = DoWhileNode(t[2], t[5], row=t.lexer.lineno)
 
 
